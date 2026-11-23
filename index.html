@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#b01620" id="tc">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<title>Portal dos Mitos</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Spectral:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Tema padrão: vermelho do blog. Para trocar o vermelho, altere --brand e --acc. */
+:root{--bg:#2a0c10;--surf:#3a1219;--ink:#f7ece8;--mute:#d1a9a3;--line:#5c242b;--brand:#b01620;--acc:#ff8a80;--onb:#fff;--hero:linear-gradient(transparent 30%,rgba(30,6,10,.94));--serif:"Cormorant Garamond",Georgia,serif;--body:Spectral,Georgia,serif;--ui:system-ui,-apple-system,"Segoe UI",sans-serif}
+:root[data-theme=light]{--bg:#f7f2f1;--surf:#fff;--ink:#2b1517;--mute:#6d5557;--line:#e6d9d7;--brand:#b01620;--acc:#b01620}
+:root[data-theme=dark]{--bg:#141112;--surf:#221c1d;--ink:#f1e9e8;--mute:#aa9b9a;--line:#3a3132;--brand:#c8232e;--acc:#ff7b82;--hero:linear-gradient(transparent 30%,rgba(10,8,9,.95))}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#app{max-width:720px;margin:0 auto;min-height:100%;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+header{position:sticky;top:0;z-index:5;background:var(--brand);color:var(--onb);display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px}
+header h1{font:700 28px/1 var(--serif);flex:1}
+.ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:18px;border:1px solid var(--line)}
+header .ic{border-color:rgba(255,255,255,.45)}
+#sbar{display:none;padding:10px 16px}
+#sbar.on{display:block}
+.in{width:100%;padding:12px 16px;border-radius:24px;border:1px solid var(--line);background:var(--surf);color:var(--ink);font:16px var(--ui)}
+#banner{display:none;margin:12px 16px 0;padding:12px 16px;border-radius:12px;background:var(--brand);color:var(--onb);font-weight:600;text-align:center;width:calc(100% - 32px)}
+#banner.on{display:block}
+#note{margin:12px 16px 0;padding:10px 14px;border-radius:12px;border:1px dashed var(--line);color:var(--mute);font-size:14px}
+#toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:30;display:none;max-width:90%}
+.hero{position:relative;display:block;width:100%;height:420px;border-radius:0 0 28px 28px;overflow:hidden;text-align:left;background:var(--surf) center/cover}
+.hero .t{position:absolute;inset:0;background:var(--hero);display:flex;flex-direction:column;justify-content:flex-end;padding:22px 20px;color:#fff}
+.hero h2{font:700 42px/1 var(--serif);margin:6px 0}
+.hero p{font:15px/1.4 var(--body);opacity:.92;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta{font-size:13px;color:var(--mute)}
+.hero .meta{color:#f3d4d0}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:14px 16px;scrollbar-width:none}
+.chip{flex:none;padding:7px 14px;border-radius:20px;border:1px solid var(--line);font-size:14px;background:var(--surf)}
+.chip.on{background:var(--brand);color:var(--onb);border-color:var(--brand)}
+.card{display:flex;gap:14px;width:100%;text-align:left;padding:14px 16px;border-bottom:1px solid var(--line)}
+.card .th{flex:none;width:88px;height:112px;border-radius:14px;background:var(--surf) center/cover}
+.card h3{font:700 25px/1.05 var(--serif);margin-bottom:4px}
+.card p{font:14px/1.4 var(--body);color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:4px 0}
+.card.read h3{color:var(--mute)}
+.more{display:block;margin:20px auto;padding:12px 24px;border-radius:24px;border:1px solid var(--acc);color:var(--acc);font-weight:600}
+.empty{padding:48px 24px;text-align:center;color:var(--mute);line-height:1.6}
+.empty a,.body a{color:var(--acc)}
+.sec{padding:16px}
+.sec h2{font:700 32px/1 var(--serif);margin-bottom:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.row small{display:block;color:var(--mute);margin-top:3px;font-size:12px;line-height:1.4}
+.seg{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;flex:none}
+.seg button{padding:8px 14px;font-size:14px}.seg .on{background:var(--brand);color:var(--onb)}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--surf);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav div{display:flex;max-width:720px;margin:0 auto}
+nav button{flex:1;padding:9px 0 11px;font-size:11px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button b{font-size:20px;font-weight:400}
+nav .on{color:var(--acc);font-weight:700}
+#reader{position:fixed;inset:0;z-index:10;background:var(--bg);overflow-y:auto;display:none}
+#reader.on{display:block}
+#prog{position:fixed;top:0;left:0;height:3px;background:var(--acc);width:0;z-index:12}
+.rbar{position:sticky;top:0;z-index:2;background:var(--bg);display:flex;gap:8px;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;border-bottom:1px solid var(--line)}
+.rbar .sp{flex:1}
+.art{max-width:640px;margin:0 auto;padding:20px 18px calc(60px + env(safe-area-inset-bottom,0px))}
+.art h1{font:700 46px/1 var(--serif);margin:6px 0 14px}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.body{font-family:var(--body);line-height:1.7;overflow-wrap:anywhere}
+.body img{max-width:100%;height:auto;border-radius:12px;display:block;margin:16px auto}
+.body table{max-width:100%;display:block;overflow-x:auto}
+.body blockquote{border-left:3px solid var(--acc);padding-left:14px;color:var(--mute);margin:16px 0}
+.pg{font-size:17px;line-height:1.6}
+.pg li,.pg p{margin:6px 0}
+.pg ul,.pg ol{padding-left:20px}
+.sk{height:112px;margin:14px 16px;border-radius:14px;background:var(--surf)}
+@media(prefers-reduced-motion:no-preference){#reader.on{animation:up .22s ease-out}@keyframes up{from{transform:translateY(24px);opacity:0}}}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<div id="app">
+  <header><h1 id="ttl">Portal dos Mitos</h1><button class="ic" id="bS" aria-label="Buscar">🔍</button><button class="ic" id="bR" aria-label="Mito aleatório">🎲</button></header>
+  <div id="sbar"><input class="in" id="q" type="search" placeholder="Busque um mito, deus ou criatura" enterkeyhint="search"></div>
+  <button id="banner"></button>
+  <div id="note" hidden></div>
+  <main id="main"></main>
+</div>
+<nav><div id="nav"></div></nav>
+<div id="reader"></div>
+<div id="toast" role="status"></div>
+
+<script>
+const BLOG='https://portal-dos-mitos.blogspot.com';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const SEED=[
+ {id:'s1',title:'Tambanakaua',date:'2026-11-19T10:00:00-03:00',tags:['Mitologia Filipina'],text:'Criatura sobrenatural dos povos Manobo, em Mindanau, descrita como uma tarântula gigante responsável pelos eclipses lunares.',url:BLOG+'/2026/11/tambanakaua.html'},
+ {id:'s2',title:'Mayoroparo',date:'2026-11-18T10:00:00-03:00',tags:['Região Norte'],text:'Personagem sobrenatural da mitologia do povo Apurinã, ligada ao grande incêndio que destruiu o mundo.',url:BLOG+'/2026/11/mayoroparo.html'},
+ {id:'s3',title:'Néfelas',date:'2026-11-17T10:00:00-03:00',tags:['Mitologia Grega'],text:'Ninfas gregas das nuvens e da chuva, associadas ao ciclo das águas e à fertilidade do solo.',url:BLOG+'/2026/11/nefelas.html'},
+ {id:'s4',title:'Taowu',date:'2026-11-16T10:00:00-03:00',tags:['Mitologia Chinesa'],text:'Um dos Quatro Perigos da tradição chinesa, símbolo de ferocidade, obstinação e desordem.',url:BLOG+'/2026/11/taowu.html'}
+].map(p=>({...p,html:'',img:'',min:1}));
+
+const S={tab:'home',posts:[],total:0,label:'',q:'',loading:false,demo:false,offline:false,newest:null,extra:[],pages:null,pg:{},ins:null,
+ fav:store.get('fav',[]),read:store.get('read',[]),favData:store.get('favData',{}),
+ size:store.get('size',19),theme:store.get('theme','blog'),notif:store.get('notif',false)};
+const PAGE=12;
+const TABS=[['home','🏛️','Início'],['mapa','🗺️','Mapa'],['glos','📖','Glossário'],['fav','🔖','Favoritos'],['cfg','⚙️','Ajustes']];
+const SLUG={mapa:'indice-do-blog',glos:'glossario'};
+
+/* ---------- dados ---------- */
+function jsonp(url){return new Promise((ok,no)=>{const cb='cb'+Date.now()+Math.floor(Math.random()*999),s=document.createElement('script');
+ const t=setTimeout(()=>{no(new Error('timeout'));s.remove()},12000);
+ window[cb]=d=>{clearTimeout(t);ok(d);s.remove();delete window[cb]};
+ s.onerror=()=>{clearTimeout(t);no(new Error('jsonp'));s.remove()};
+ s.src=url+'&alt=json-in-script&callback='+cb;document.head.appendChild(s)})}
+async function feed(params,label,base='/feeds/posts/default'){
+ const url=BLOG+base+(label?'/-/'+encodeURIComponent(label):'')+'?'+params;
+ try{const r=await fetch(url+'&alt=json');if(!r.ok)throw 0;return (await r.json()).feed}
+ catch(e){return (await jsonp(url)).feed}
+}
+function map(e){
+ const html=e.content?e.content.$t:(e.summary?e.summary.$t:'');
+ const m=html.match(/<img[^>]+src="([^"]+)"/);
+ const text=html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').replace(/^۞?\s*ADM \w+\s*/,'').trim();
+ const alt=(e.link.find(l=>l.rel==='alternate')||{}).href||BLOG;
+ return{id:e.id.$t.split(/post-|page-/)[1]||e.id.$t,title:e.title.$t,url:alt,date:e.published.$t,html,
+  img:m?m[1]:(e.media$thumbnail?e.media$thumbnail.url.replace('/s72-c/','/w480/'):''),
+  tags:(e.category||[]).map(c=>c.term),text,min:Math.max(1,Math.round(text.split(' ').length/200))};
+}
+async function load(reset){
+ if(S.loading)return;S.loading=true;if(reset){S.posts=[];S.total=0}render();
+ try{
+  const start=S.posts.length+1;
+  const f=await feed('max-results='+PAGE+'&start-index='+start+(S.q?'&q='+encodeURIComponent(S.q):''),S.label);
+  S.total=+f.openSearch$totalResults.$t;S.demo=false;S.offline=false;
+  S.posts=S.posts.concat((f.entry||[]).map(map));
+  if(!S.label&&!S.q&&start===1&&S.posts[0]){S.newest=S.posts[0].id;store.set('cache',S.posts.slice(0,8));if(S.notif)setSeen(S.newest)}
+ }catch(e){
+  if(!S.posts.length){const c=store.get('cache',null);S.posts=c||SEED;S.total=S.posts.length;S.demo=!c;S.offline=!!c}
+ }
+ S.loading=false;render();
+}
+async function getPages(){
+ if(S.pages)return S.pages;
+ try{const f=await feed('max-results=50',null,'/feeds/pages/default');S.pages=(f.entry||[]).map(map)}catch(e){return []}
+ return S.pages;
+}
+async function loadPage(k){
+ S.pg[k]='loading';render();
+ const L=await getPages();
+ const re=k==='mapa'?/mapa|[ií]ndice/i:/gloss/i;
+ S.pg[k]=L.find(p=>p.url.includes(SLUG[k]))||L.find(p=>re.test(p.title))||null;
+ render();
+}
+const known=()=>[...S.posts,...Object.values(S.favData),...S.extra];
+const norm=u=>u.split('?')[0].split('#')[0].replace(/^http:/,'https:');
+
+/* ---------- notificações ---------- */
+const seen=async()=>{try{const r=await (await caches.open('pdm-meta')).match('/lastseen');return r?await r.text():null}catch(e){return null}};
+const setSeen=async id=>{try{await (await caches.open('pdm-meta')).put('/lastseen',new Response(id))}catch(e){}};
+async function notify(p){
+ const o={body:p.text.slice(0,120),icon:'icon.svg',badge:'icon.svg',tag:'mito-'+p.id};
+ try{const r=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();
+  if(r)await r.showNotification('Novo mito: '+p.title,o);else new Notification('Novo mito: '+p.title,o)}catch(e){}
+}
+async function toggleNotif(){
+ if(S.notif){S.notif=false;store.set('notif',false);render();return}
+ if(!('Notification' in window)){toast('Este navegador não oferece notificações.');return}
+ const perm=await Notification.requestPermission();
+ if(perm!=='granted'){toast('Permissão negada. Libere nas configurações do navegador.');return}
+ S.notif=true;store.set('notif',true);
+ if(S.newest)setSeen(S.newest);
+ try{const r=await navigator.serviceWorker.ready;await r.periodicSync.register('novos-mitos',{minInterval:12*3600*1000})}catch(e){}
+ toast('Avisos ativados');render();
+}
+async function poll(){
+ if(S.demo||!S.newest||(document.hidden&&!S.notif))return;
+ try{const f=await feed('max-results=1');const n=f.entry&&map(f.entry[0]);
+  if(n&&n.id!==S.newest){
+   const b=$('#banner');b.textContent='Novo mito publicado: '+n.title+'. Toque para atualizar.';b.classList.add('on');
+   if(S.notif&&Notification.permission==='granted'&&await seen()!==n.id){notify(n);setSeen(n.id)}
+  }}catch(e){}
+}
+setInterval(poll,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
+
+/* ---------- helpers ---------- */
+const fmt=d=>new Date(d).toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'});
+const bg=u=>u?`style="background-image:url('${esc(u)}')"`:'';
+const isFav=id=>S.fav.includes(id);
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',3500)}
+function clean(html){
+ const d=new DOMParser().parseFromString(html,'text/html');
+ d.querySelectorAll('script,style,iframe,object,embed,form,link,noscript').forEach(n=>n.remove());
+ d.querySelectorAll('*').forEach(n=>{[...n.attributes].forEach(a=>{if(/^on/i.test(a.name)||a.name==='style'||(a.name==='href'&&/^\s*javascript:/i.test(a.value)))n.removeAttribute(a.name)});
+  if(n.tagName==='A'){n.target='_blank';n.rel='noopener'}
+  if(n.tagName==='IMG'){n.removeAttribute('width');n.removeAttribute('height');n.loading='lazy'}});
+ d.querySelectorAll('.separator a[imageanchor]').forEach(a=>a.removeAttribute('href'));
+ return d.body.innerHTML;
+}
+function applyTheme(){
+ const r=document.documentElement;S.theme==='blog'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',S.theme);
+ $('#tc').content=getComputedStyle(r).getPropertyValue('--brand').trim()||'#b01620';
+}
+
+/* ---------- telas ---------- */
+function card(p){return`<button class="card${S.read.includes(p.id)?' read':''}" data-open="${esc(p.id)}"><div class="th" ${bg(p.img)}></div><div><h3>${esc(p.title)}</h3><div class="meta">${fmt(p.date)} · ${p.min} min</div><p>${esc(p.text)}</p><div class="meta">${esc(p.tags.slice(0,2).join(' · '))}</div></div></button>`}
+const skel='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
+function render(){
+ $('#ttl').textContent={home:'Portal dos Mitos',mapa:'Mapa do Blog',glos:'Glossário',fav:'Favoritos',cfg:'Ajustes'}[S.tab];
+ $('#nav').innerHTML=TABS.map(([k,i,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}"><b>${i}</b>${l}</button>`).join('');
+ const n=$('#note'),msg=S.demo?'Modo demonstração: não foi possível acessar o blog aqui. Hospedado no seu site, o app mostra os posts reais.':(S.offline?'Sem conexão. Mostrando os últimos posts salvos.':'');
+ n.hidden=!msg||S.tab!=='home';n.textContent=msg;
+ let h='';
+ if(S.tab==='home'){
+  if(S.label)h+=`<div class="chips"><button class="chip on" data-label="">${esc(S.label)} ✕</button></div>`;
+  if(S.q)h+=`<div class="chips"><button class="chip on" data-clearq>Busca: ${esc(S.q)} ✕</button></div>`;
+  const [a,...rest]=S.posts;
+  if(a&&!S.q&&!S.label)h+=`<button class="hero" data-open="${esc(a.id)}" ${bg(a.img)}><div class="t"><span class="meta">Mais recente · ${fmt(a.date)}</span><h2>${esc(a.title)}</h2><p>${esc(a.text)}</p></div></button>`+rest.map(card).join('');
+  else h+=S.posts.map(card).join('');
+  if(S.loading)h+=skel;
+  else if(!S.posts.length)h+=`<div class="empty">Nenhum mito encontrado${S.q?' para “'+esc(S.q)+'”':''}.<br>Tente outro nome ou limpe a busca.</div>`;
+  else if(S.posts.length<S.total&&!S.demo)h+=`<button class="more" data-more>Carregar mais mitos</button>`;
+ }
+ if(S.tab==='mapa'||S.tab==='glos'){
+  const p=S.pg[S.tab];
+  if(p===undefined||p==='loading')h+=skel;
+  else if(!p)h+=`<div class="empty">Não foi possível carregar esta página agora.<br><a href="${BLOG}/p/${SLUG[S.tab]}.html" target="_blank" rel="noopener">Abrir no navegador</a></div>`;
+  else{p.clean=p.clean||clean(p.html);
+   h+=`<div class="sec"><input class="in" id="flt" type="search" placeholder="${S.tab==='glos'?'Filtrar termos do glossário':'Filtrar o mapa do blog'}"><div class="body pg" id="pg" style="margin-top:14px">${p.clean}</div></div>`}
+ }
+ if(S.tab==='fav'){
+  const L=S.fav.map(id=>S.favData[id]).filter(Boolean);
+  h+=L.length?L.map(card).join(''):`<div class="empty">Você ainda não salvou nenhum mito.<br>Abra um post e toque em 📑 para guardá-lo aqui.</div>`;
+ }
+ if(S.tab==='cfg'){
+  const np='Notification' in window?Notification.permission:'unsupported';
+  h+=`<div class="sec"><h2>Ajustes</h2>
+  <div class="row"><div>Avisar sobre novos mitos<small>${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></div>
+  <div class="row"><span>Aparência</span><div class="seg">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
+  <div class="row"><span>Tamanho do texto</span><div class="seg"><button data-size="-1" aria-label="Diminuir">A−</button><button data-size="1" aria-label="Aumentar">A+</button></div></div>
+  ${S.ins?`<div class="row"><span>Instalar na tela inicial</span><button class="chip on" data-install>Instalar</button></div>`:''}
+  <div class="row"><span>Posts lidos</span><button class="chip" data-clearread>${S.read.length} · limpar</button></div>
+  <p class="meta" style="margin-top:18px;line-height:1.5">Conteúdo e imagens: Portal dos Mitos. Este app lê o feed público do blog.</p></div>`;
+ }
+ $('#main').innerHTML=h;
+}
+function setTab(k){
+ if(S.tab===k&&k!=='home'){scrollTo(0,0);return}
+ S.tab=k;render();scrollTo(0,0);
+ if((k==='mapa'||k==='glos')&&(S.pg[k]===undefined||S.pg[k]===null))loadPage(k);
+}
+
+/* ---------- leitor ---------- */
+function showReader(p){
+ if(!p.page&&!S.read.includes(p.id)){S.read.push(p.id);store.set('read',S.read.slice(-500))}
+ const body=p.html?clean(p.html):`<p>${esc(p.text)}</p><p><a href="${esc(p.url)}" target="_blank" rel="noopener">Ler o post completo no blog</a></p>`;
+ const r=$('#reader'),id=esc(p.id);
+ r.innerHTML=`<div class="rbar"><button class="ic" data-close aria-label="Voltar">←</button><span class="sp"></span><button class="ic" data-size="-1" aria-label="Diminuir texto">A−</button><button class="ic" data-size="1" aria-label="Aumentar texto">A+</button><button class="ic" data-share="${id}" aria-label="Compartilhar">↗</button>${p.page?'':`<button class="ic" data-fav="${id}" aria-label="Favoritar">${isFav(p.id)?'🔖':'📑'}</button>`}</div>
+ <article class="art"><div class="meta">${p.page?'':fmt(p.date)+' · '+p.min+' min de leitura'}</div><h1>${esc(p.title)}</h1><div class="tags">${p.tags.map(t=>`<button class="chip" data-label="${esc(t)}" data-close>${esc(t)}</button>`).join('')}</div><div class="body" id="body" style="font-size:${S.size}px">${body}</div></article>`;
+ r.classList.add('on');r.scrollTop=0;document.body.style.overflow='hidden';
+ if(!S.extra.includes(p)&&!known().includes(p))S.extra.push(p);
+ S.cur=p;
+}
+const openPost=id=>{const p=known().find(x=>x.id===id);if(p)showReader(p)};
+function closeReader(){$('#reader').classList.remove('on');document.body.style.overflow='';$('#prog').style.width='0';render()}
+$('#reader').addEventListener('scroll',e=>{const r=e.target;$('#prog').style.width=Math.min(100,r.scrollTop/(r.scrollHeight-r.clientHeight||1)*100)+'%'});
+
+/* ---------- links internos ---------- */
+async function openUrl(u){
+ const target=norm(u.href);
+ let p=known().find(x=>norm(x.url)===target);
+ const m=u.pathname.match(/^\/(\d{4})\/(\d{2})\/[^/]+\.html$/);
+ if(!p&&m){
+  toast('Abrindo…');
+  try{const y=+m[1],mo=+m[2],ny=mo===12?y+1:y,nm=mo===12?1:mo+1,pad=n=>String(n).padStart(2,'0');
+   const f=await feed(`published-min=${m[1]}-${m[2]}-01T00:00:00-03:00&published-max=${ny}-${pad(nm)}-01T00:00:00-03:00&max-results=150`);
+   p=(f.entry||[]).map(map).find(x=>norm(x.url)===target)}catch(e){}
+ }
+ if(p)showReader(p);else window.open(u.href,'_blank','noopener');
+}
+async function route(u){
+ const path=decodeURIComponent(u.pathname);
+ const wasOpen=$('#reader').classList.contains('on');
+ if(path.includes('/p/glossario')){if(wasOpen)closeReader();setTab('glos');return}
+ if(path.includes('/p/indice-do-blog')){if(wasOpen)closeReader();setTab('mapa');return}
+ const lab=path.match(/^\/search\/label\/(.+)$/);
+ if(lab){if(wasOpen)closeReader();S.label=lab[1];S.q='';S.tab='home';await load(true);scrollTo(0,0);return}
+ if(/^\/p\/.+\.html$/.test(path)){
+  toast('Abrindo…');const L=await getPages();const p=L.find(x=>norm(x.url)===norm(u.href));
+  if(p)showReader({...p,page:true,tags:[]});else window.open(u.href,'_blank','noopener');return}
+ if(/^\/\d{4}\/\d{2}\/.+\.html$/.test(path)){openUrl(u);return}
+ window.open(u.href,'_blank','noopener');
+}
+
+/* ---------- ações ---------- */
+function setSize(d){S.size=Math.max(15,Math.min(28,S.size+d));store.set('size',S.size);const b=$('#body');if(b)b.style.fontSize=S.size+'px'}
+async function random(){
+ try{const f=await feed('max-results=1');const t=+f.openSearch$totalResults.$t;
+  const g=await feed('max-results=1&start-index='+(1+Math.floor(Math.random()*t)));showReader(map(g.entry[0]))}
+ catch(e){const p=S.posts[Math.floor(Math.random()*S.posts.length)];if(p)showReader(p)}
+}
+function filt(v){
+ const root=$('#pg');if(!root)return;v=v.trim().toLowerCase();
+ let els=[...root.querySelectorAll('li,tr,dt,p')];if(els.length<5)els=[...root.querySelectorAll('a')];
+ els.forEach(el=>{el.hidden=!!v&&!el.textContent.toLowerCase().includes(v)});
+}
+document.addEventListener('input',e=>{if(e.target.id==='flt')filt(e.target.value)});
+document.addEventListener('click',async e=>{
+ const a=e.target.closest('a');
+ if(a&&a.closest('.body')){
+  let u;try{u=new URL(a.href,BLOG)}catch(_){}
+  if(u&&/(^|\.)portal-dos-mitos\.blogspot\.com(\.br)?$/.test(u.hostname)){e.preventDefault();route(u);return}
+  return;
+ }
+ const t=e.target.closest('button');if(!t)return;const d=t.dataset;
+ if('close' in d&&d.label===undefined){closeReader();return}
+ if(d.open){openPost(d.open);return}
+ if(d.tab){setTab(d.tab);return}
+ if(d.label!==undefined){if('close' in d)closeReader();S.label=d.label;S.q='';S.tab='home';await load(true);scrollTo(0,0);return}
+ if('clearq' in d){S.q='';$('#q').value='';load(true);return}
+ if('more' in d){load();return}
+ if(d.size){setSize(+d.size);return}
+ if(d.theme){S.theme=d.theme;store.set('theme',S.theme);applyTheme();render();return}
+ if('notif' in d){toggleNotif();return}
+ if('install' in d){S.ins.prompt();S.ins=null;render();return}
+ if('clearread' in d){S.read=[];store.set('read',[]);render();return}
+ if(d.fav){const id=d.fav,p=known().find(x=>x.id===id);if(!p)return;
+  if(isFav(id)){S.fav=S.fav.filter(x=>x!==id);delete S.favData[id]}else{S.fav.push(id);S.favData[id]=p}
+  store.set('fav',S.fav);store.set('favData',S.favData);t.textContent=isFav(id)?'🔖':'📑';return}
+ if(d.share){const p=S.cur;
+  try{if(navigator.share)await navigator.share({title:p.title,text:p.title+' — Portal dos Mitos',url:p.url});else{await navigator.clipboard.writeText(p.url);toast('Link copiado')}}catch(_){}return}
+ if(t.id==='bS'){$('#sbar').classList.toggle('on');if($('#sbar').classList.contains('on'))$('#q').focus();return}
+ if(t.id==='bR'){random();return}
+ if(t.id==='banner'){t.classList.remove('on');S.q='';S.label='';S.tab='home';load(true);scrollTo(0,0)}
+});
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){S.q=e.target.value.trim();S.label='';S.tab='home';load(true);e.target.blur()}});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#reader').classList.contains('on'))closeReader()});
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();S.ins=e;if(S.tab==='cfg')render()});
+
+applyTheme();render();load(true);
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
