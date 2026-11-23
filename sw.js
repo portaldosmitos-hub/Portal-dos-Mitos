@@ -1,4 +1,4 @@
-const SHELL='pdm-shell-v7',BLOG='https://portal-dos-mitos.blogspot.com';
+const SHELL='pdm-shell-v8',BLOG='https://portal-dos-mitos.blogspot.com';
 self.addEventListener('install',e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(['./','./manifest.webmanifest','./logo-topo.png','./icon-192.png','./favicon.png'])).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n.startsWith('pdm-shell')&&n!==SHELL).map(n=>caches.delete(n)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{

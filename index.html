@@ -12,6 +12,8 @@
 /* Vermelho do blog por padrão. Para ajustar o tom, altere --brand. */
 :root{--bg:#2a0c10;--surf:#3a1219;--hdr:#1f080b;--ink:#f7ece8;--mute:#d1a9a3;--line:#5c242b;--brand:#b01620;--acc:#ff8a80;--onb:#fff;--ui:system-ui,-apple-system,"Segoe UI",sans-serif;--hh:62px;--nh:60px}
 :root[data-theme=light]{--bg:#f7f2f1;--surf:#fff;--hdr:#fffaf9;--ink:#2b1517;--mute:#6d5557;--line:#e6d9d7;--acc:#b01620}
+:root[data-theme=bw]{--bg:#0b0b0b;--surf:#1a1a1a;--hdr:#000;--ink:#f2f2f2;--mute:#a9a9a9;--line:#3b3b3b;--brand:#e9e9e9;--acc:#fff;--onb:#000}
+html[data-theme=bw]{filter:grayscale(1)}
 :root[data-theme=dark]{--bg:#141112;--surf:#221c1d;--hdr:#0f0d0e;--ink:#f1e9e8;--mute:#aa9b9a;--line:#3a3132;--brand:#c8232e;--acc:#ff7b82}
 *{box-sizing:border-box;margin:0}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--ui)}
@@ -32,9 +34,21 @@ header{position:fixed;top:0;left:0;right:0;z-index:5;height:calc(var(--hh) + env
 .ld{position:absolute;inset:0;display:grid;place-items:center;color:var(--mute);font-size:14px}
 .fr.ok .ld{display:none}
 nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--surf);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:flex;height:calc(var(--nh) + env(safe-area-inset-bottom,0px))}
-nav button{flex:1;font-size:11px;color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
-nav button b{font-size:20px;font-weight:400}
+nav button{position:relative;overflow:hidden;flex:1;font-size:11px;color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;-webkit-tap-highlight-color:transparent;transition:color .3s}
+nav button b{display:inline-block;font-size:20px;font-weight:400;transition:transform .4s cubic-bezier(.34,1.8,.5,1)}
+nav button span{transition:transform .3s,opacity .3s;opacity:.85}
 nav .on{color:var(--acc);font-weight:700}
+nav .on b{transform:translateY(-5px) scale(1.22)}
+nav .on span{opacity:1;transform:translateY(-1px)}
+.ind{position:absolute;top:-1px;bottom:env(safe-area-inset-bottom,0px);left:0;width:20%;pointer-events:none;transition:transform .5s cubic-bezier(.34,1.45,.5,1),width .4s}
+.ind.nt{transition:none}
+.ind::before{content:'';position:absolute;top:0;left:50%;width:36px;height:3px;margin-left:-18px;border-radius:0 0 4px 4px;background:linear-gradient(90deg,#ffdf8a,#ff8a5c,#ffdf8a);box-shadow:0 0 14px 2px rgba(255,150,90,.7)}
+.ind::after{content:'';position:absolute;inset:0;background:radial-gradient(65% 80% at 50% 0,rgba(255,138,128,.26),transparent 72%)}
+nav .tap b{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+nav .tap::after{content:'';position:absolute;left:50%;top:38%;width:10px;height:10px;margin:-5px;border-radius:50%;background:var(--acc);opacity:.4;animation:rip .6s ease-out forwards}
+@keyframes pop{0%{transform:translateY(0) scale(.75)}45%{transform:translateY(-11px) scale(1.4) rotate(-7deg)}100%{transform:translateY(-5px) scale(1.22)}}
+@keyframes rip{to{transform:scale(10);opacity:0}}
+@media(prefers-reduced-motion:reduce){.ind,nav b,nav span{transition:none}nav .tap b,nav .tap::after{animation:none}}
 #banner{position:fixed;z-index:8;left:12px;right:12px;top:calc(var(--hh) + 10px + env(safe-area-inset-top,0px));padding:12px 14px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:600;text-align:center;display:none}
 #banner.on{display:block}
 #off{position:fixed;z-index:7;left:0;right:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));background:#000c;color:#fff;font-size:13px;text-align:center;padding:6px;display:none}
@@ -45,6 +59,7 @@ nav .on{color:var(--acc);font-weight:700}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
 .row small{display:block;color:var(--mute);margin-top:3px;font-size:12px;line-height:1.4}
 .seg{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;flex:none}
+.seg.full{width:100%}.seg.full button{flex:1}
 .seg button{padding:8px 12px;font-size:13px}.seg .on{background:var(--brand);color:var(--onb)}
 .chip{padding:7px 14px;border-radius:20px;border:1px solid var(--line);font-size:14px;background:var(--surf)}
 .chip.on{background:var(--brand);color:var(--onb);border-color:var(--brand)}
@@ -105,7 +120,7 @@ const TITLES={home:'Portal dos Mitos',mapa:'Mapa do Blog',glos:'Glossário',sobr
 const NAV=[['home','🏛️','Início'],['mapa','🗺️','Mapa'],['glos','📖','Glossário'],['fav','🔖','Favoritos'],['more','☰','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 Object.assign(S,{zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
-const VER='1.5';
+const VER='1.6';
 Object.assign(S,{cols:store.get('cols',[]),favQ:'',favCol:'',favTag:'',favSort:store.get('favSort','r'),toastFn:null});
 S.fav.forEach(f=>{if(!Array.isArray(f.cols))f.cols=[]});
 const nz=t=>t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -136,11 +151,23 @@ function show(key,path){
  Object.entries(frames).forEach(([k,v])=>v.box.classList.toggle('on',k===key));
  syncUI();
 }
+const curNav=()=>S.panel||(['home','mapa','glos'].includes(S.sec)?S.sec:'more');
+function buildNav(){
+ $('#nav').innerHTML='<i class="ind nt" id="ind"></i>'+NAV.map(([k,i,l])=>`<button data-nav="${k}"><b>${i}</b><span>${l}</span></button>`).join('');
+ syncUI();
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{moveInd();$('#ind').classList.remove('nt')}));
+}
+function moveInd(){
+ const b=$('#nav button[data-nav="'+curNav()+'"]'),i=$('#ind');if(!b||!i)return;
+ i.style.width=b.offsetWidth+'px';i.style.transform='translateX('+b.offsetLeft+'px)';
+}
+addEventListener('resize',moveInd);addEventListener('load',moveInd);
 function syncUI(){
  $('#favs').classList.toggle('on',S.panel==='fav');
  $('#more').classList.toggle('on',S.panel==='more');
- const cur=S.panel||(['home','mapa','glos'].includes(S.sec)?S.sec:'more');
- $('#nav').innerHTML=NAV.map(([k,i,l])=>`<button data-nav="${k}" class="${cur===k?'on':''}"><b>${i}</b>${l}</button>`).join('');
+ const cur=curNav();
+ document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.nav===cur));
+ moveInd();
  const c=(frames[S.sec]||{}).cur;
  const b=$('#bF');b.hidden=!!S.panel;const on=!!(c&&S.fav.some(f=>f.path===c.path));b.textContent=on?'★':'☆';b.classList.toggle('on',on);
 }
@@ -258,7 +285,7 @@ function renderMore(){
  <h2>Páginas do blog</h2>${link('sobre','Sobre o Autor')}${link('blog','Sobre o Blog')}${link('parc','Parcerias')}${link('cont','Contato')}
  <h2>Ajustes do app</h2>
  <div class="row"><div>Avisar sobre novos mitos<small>${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></div>
- <div class="row"><span>Cores do app</span><div class="seg">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
+ <div class="row" style="flex-wrap:wrap"><div>Cores do app<small>${S.theme==='bw'?'Preto e branco ativo no app e no blog.':'Vermelho, claro, escuro ou preto e branco.'}</small></div><div class="seg full">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro'],['bw','P&amp;B']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  ${standalone()?'':`<div class="row"><div>Instalar na tela inicial<small>${S.ins?'Pronto para instalar.':'Toque para ver como instalar.'}</small></div><button class="chip on" data-install>Instalar</button></div>`}
  <h2>Dados e manutenção</h2>
  <div class="row"><div>Backup dos favoritos<small>Guarde em arquivo ou traga de outro aparelho.</small></div><span style="display:flex;gap:8px"><button class="chip" data-export>Exportar</button><button class="chip" data-import>Importar</button></span></div>
@@ -388,7 +415,7 @@ document.addEventListener('click',e=>{
  const t=e.target.closest('button');if(!t)return;const d=t.dataset;
  if('logo' in d){show('home');return}
  if(d.nav){
-  const k=d.nav;
+  const k=d.nav;t.classList.add('tap');setTimeout(()=>t.classList.remove('tap'),650);if(navigator.vibrate)navigator.vibrate(8);
   if(k==='fav'||k==='more'){S.panel=S.panel===k?null:k;if(S.panel==='fav')renderFavs();if(S.panel==='more')renderMore();syncUI();return}
   if(S.sec===k&&!S.panel){resetSection();return}
   show(k);return}
@@ -445,7 +472,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
  navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.go)goPost(e.data.go)});
 }
 
-applyTheme();online();
+buildNav();applyTheme();online();
 const go=new URLSearchParams(location.search).get('go');
 if(go){history.replaceState(null,'',location.pathname);goPost(go)}else show('home');
 poll();
