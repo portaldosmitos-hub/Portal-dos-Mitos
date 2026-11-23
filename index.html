@@ -61,7 +61,20 @@ button.row{cursor:pointer}
 .day small{color:var(--acc);font-weight:700;letter-spacing:.5px;font-size:11px;text-transform:uppercase}
 .day strong{font:700 22px/1.1 Georgia,serif;display:block;margin:4px 0}
 .day p{font-size:13px;color:var(--mute);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-#toast{position:fixed;left:50%;bottom:calc(var(--nh) + 20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:30;display:none;max-width:90%;text-align:center}
+#sheet{position:fixed;inset:0;z-index:40;display:none}
+#sheet.on{display:block}
+.sh-bg{position:absolute;inset:0;background:#0009}
+.sh-box{position:absolute;left:0;right:0;bottom:0;max-height:82%;overflow:auto;background:var(--bg);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));border-top:3px solid var(--brand)}
+.sh-t{font:700 20px/1.25 Georgia,serif;display:block;margin-bottom:4px}
+.sh-box p{color:var(--mute);font-size:14px;line-height:1.5;margin:8px 0}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:8px 0;scrollbar-width:none}
+.chips .chip{flex:none;white-space:nowrap}
+.chip.sm{font-size:12px;padding:5px 11px}
+.frow{display:flex;gap:10px;align-items:center;margin:8px 0 2px}
+.frow input{flex:1;min-width:0;padding:10px 14px;border-radius:22px;border:1px solid var(--line);background:var(--surf);color:var(--ink);font:15px var(--ui)}
+.lnk{color:var(--acc);font-size:13px;text-decoration:underline}
+#toast button{color:var(--brand);font-weight:700;padding:0 2px}
+#toast{position:fixed;left:50%;bottom:calc(var(--nh) + 20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;display:none;max-width:92%;gap:14px;align-items:center;z-index:50}
 </style>
 </head>
 <body>
@@ -78,6 +91,7 @@ button.row{cursor:pointer}
 <div class="panel" id="more"></div>
 <nav id="nav"></nav>
 <div id="toast" role="status"></div>
+<div id="sheet"></div>
 <input type="file" id="imp" accept="application/json,.json" hidden>
 
 <script>
@@ -91,7 +105,12 @@ const TITLES={home:'Portal dos Mitos',mapa:'Mapa do Blog',glos:'Glossário',sobr
 const NAV=[['home','🏛️','Início'],['mapa','🗺️','Mapa'],['glos','📖','Glossário'],['fav','🔖','Favoritos'],['more','☰','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 Object.assign(S,{zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
-const VER='1.4';
+const VER='1.5';
+Object.assign(S,{cols:store.get('cols',[]),favQ:'',favCol:'',favTag:'',favSort:store.get('favSort','r'),toastFn:null});
+S.fav.forEach(f=>{if(!Array.isArray(f.cols))f.cols=[]});
+const nz=t=>t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const saveFav=()=>{store.set('favs',S.fav);store.set('cols',S.cols)};
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const frames={};
 const src=p=>BLOG+p;
 
@@ -154,12 +173,75 @@ function toggleFav(){
  if(!c){toast('Para favoritar, o blog precisa do código do app. Veja as instruções.');return}
  if(c.path==='/'){toast('Abra um mito e toque na estrela para guardá-lo.');return}
  const i=S.fav.findIndex(f=>f.path===c.path);
- if(i>=0){S.fav.splice(i,1);toast('Removido dos favoritos')}else{S.fav.unshift({path:c.path,title:c.title,img:c.img,t:Date.now()});toast('Salvo nos favoritos')}
- store.set('favs',S.fav);syncUI();
+ if(i>=0){
+  const [x]=S.fav.splice(i,1);saveFav();syncUI();
+  toast('Removido dos favoritos','Desfazer',()=>{S.fav.splice(Math.min(i,S.fav.length),0,x);saveFav();syncUI()});return}
+ S.fav.unshift({path:c.path,title:c.title,img:c.img,t:Date.now(),cols:[],tags:/^\/p\//.test(c.path)?[]:undefined});
+ saveFav();syncUI();toast('Salvo nos favoritos','Organizar',()=>openOrganize(c.path));ensureTags();
+}
+async function fetchTags(paths){
+ const by={},res={};
+ paths.forEach(p=>{const m=p.match(/^\/(\d{4})\/(\d{2})\//);if(m)(by[m[1]+'-'+m[2]]=by[m[1]+'-'+m[2]]||[]).push(p)});
+ const pad=n=>String(n).padStart(2,'0');
+ for(const k of Object.keys(by)){
+  const [y,mo]=k.split('-').map(Number),ny=mo===12?y+1:y,nm=mo===12?1:mo+1;
+  try{const f=await getFeed(`published-min=${k}-01T00:00:00-03:00&published-max=${ny}-${pad(nm)}-01T00:00:00-03:00&max-results=500`);
+   (f.entry||[]).forEach(e=>{const p=new URL((e.link.find(l=>l.rel==='alternate')||{}).href||BLOG).pathname;res[p]=(e.category||[]).map(c=>c.term)})}catch(e){}
+ }
+ return res;
+}
+let tagBusy=false;
+async function ensureTags(){
+ if(tagBusy)return;const need=S.fav.filter(f=>f.tags===undefined);if(!need.length)return;
+ tagBusy=true;
+ try{const r=await fetchTags(need.map(f=>f.path));
+  need.forEach(f=>{if(r[f.path])f.tags=r[f.path];else{f.tt=(f.tt||0)+1;if(f.tt>=3||!/^\/\d{4}\/\d{2}\//.test(f.path))f.tags=[]}});
+  saveFav();
+ }catch(e){}
+ tagBusy=false;if(S.panel==='fav')renderFavBody();
+}
+function favView(){
+ const q=nz(S.favQ.trim());
+ let L=S.fav.filter(f=>(!S.favCol||f.cols.includes(S.favCol))&&(!S.favTag||(f.tags||[]).includes(S.favTag))&&(!q||nz(f.title+' '+(f.tags||[]).join(' ')).includes(q)));
+ if(S.favSort==='a')L=[...L].sort((a,b)=>a.title.localeCompare(b.title,'pt'));
+ return L;
+}
+function favItem(f){
+ const cn=f.cols.map(id=>(S.cols.find(c=>c.id===id)||{}).name).filter(Boolean).map(n=>'📁 '+n);
+ const sub=[...(f.tags||[]).slice(0,2),...cn].join(' · ')||'Salvo em '+new Date(f.t).toLocaleDateString('pt-BR');
+ return `<div class="fav"><button class="go" data-favgo="${esc(f.path)}"><div class="th" ${f.img?`style="background-image:url('${esc(f.img)}')"`:''}></div><div><strong>${esc(f.title)}</strong><small>${esc(sub)}</small></div></button><button class="ic" data-forg="${esc(f.path)}" aria-label="Organizar">⋯</button></div>`;
+}
+function renderFavBody(){
+ const el=$('#fbody');if(!el)return;
+ const base=S.fav.filter(f=>!S.favCol||f.cols.includes(S.favCol));
+ const tc={};base.forEach(f=>(f.tags||[]).forEach(t=>tc[t]=(tc[t]||0)+1));
+ const tags=Object.entries(tc).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt')).slice(0,14);
+ const L=favView();
+ el.innerHTML=`<div class="chips"><button class="chip${!S.favCol?' on':''}" data-fcol="">Todos ${S.fav.length}</button>${S.cols.map(c=>`<button class="chip${S.favCol===c.id?' on':''}" data-fcol="${esc(c.id)}">📁 ${esc(c.name)} ${S.fav.filter(f=>f.cols.includes(c.id)).length}</button>`).join('')}<button class="chip" data-colnew>＋ Coleção</button></div>`
+ +(S.favCol?`<div class="meta" style="padding:0 2px 6px;font-size:13px;color:var(--mute)"><button class="lnk" data-colren="${esc(S.favCol)}">Renomear</button> · <button class="lnk" data-coldel="${esc(S.favCol)}">Excluir coleção</button></div>`:'')
+ +(tags.length?`<div class="chips">${tags.map(([t,n])=>`<button class="chip sm${S.favTag===t?' on':''}" data-ftag="${esc(t)}">${esc(t)} ${n}</button>`).join('')}</div>`:'')
+ +(L.length?L.map(favItem).join(''):`<div class="empty">Nada por aqui${S.favQ||S.favTag||S.favCol?' com esses filtros':' ainda'}.</div>`);
 }
 function renderFavs(){
- $('#favs').innerHTML=S.fav.length?S.fav.map((f,i)=>`<div class="fav"><button class="go" data-favgo="${i}"><div class="th" ${f.img?`style="background-image:url('${esc(f.img)}')"`:''}></div><div><strong>${esc(f.title)}</strong><small>Salvo em ${new Date(f.t).toLocaleDateString('pt-BR')}</small></div></button><button class="ic" data-favdel="${i}" aria-label="Remover">✕</button></div>`).join('')
- :`<div class="empty">Você ainda não guardou nenhum mito.<br>Abra uma página do blog e toque em ☆ no topo.</div>`;
+ if(!S.fav.length){$('#favs').innerHTML='<div class="empty">Você ainda não guardou nenhum mito.<br>Abra uma página do blog e toque em ☆ no topo.<br>Depois você poderá organizar em coleções.</div>';return}
+ $('#favs').innerHTML=`<div class="frow"><input id="fq" type="search" placeholder="Buscar nos favoritos" value="${esc(S.favQ)}"><div class="seg"><button data-fsort="r" class="${S.favSort==='r'?'on':''}">Recentes</button><button data-fsort="a" class="${S.favSort==='a'?'on':''}">A–Z</button></div></div><div id="fbody"></div>`;
+ renderFavBody();ensureTags();
+}
+function openSheet(html){$('#sheet').innerHTML=`<div class="sh-bg" data-sheetclose></div><div class="sh-box">${html}</div>`;$('#sheet').classList.add('on')}
+function closeSheet(){$('#sheet').classList.remove('on');if(S.panel==='fav')renderFavs()}
+function openOrganize(path){
+ const f=S.fav.find(x=>x.path===path);if(!f)return;
+ openSheet(`<strong class="sh-t">${esc(f.title)}</strong><h2 style="font:700 13px var(--ui);color:var(--mute);margin:14px 0 2px">COLEÇÕES</h2>
+ ${S.cols.length?S.cols.map(c=>`<button class="row" data-colset="${esc(c.id)}" data-p="${esc(path)}"><span>📁 ${esc(c.name)}</span><span>${f.cols.includes(c.id)?'✓':''}</span></button>`).join(''):'<p>Você ainda não criou coleções.</p>'}
+ <button class="row" data-colnew data-p="${esc(path)}"><span>＋ Nova coleção</span></button>
+ <button class="row" data-favrm="${esc(path)}"><span style="color:var(--acc)">Remover dos favoritos</span></button>
+ <button class="chip on" style="margin-top:14px;width:100%;padding:12px" data-sheetclose>Concluir</button>`);
+}
+function newCol(path){
+ const name=(prompt('Nome da coleção:')||'').trim().slice(0,40);if(!name)return;
+ const id='c'+Date.now().toString(36);S.cols.push({id,name});
+ const f=path&&S.fav.find(x=>x.path===path);if(f)f.cols.push(id);else S.favCol=id;
+ saveFav();if(f)openOrganize(path);else renderFavBody();
 }
 
 /* ---------- menu Mais ---------- */
@@ -177,7 +259,7 @@ function renderMore(){
  <h2>Ajustes do app</h2>
  <div class="row"><div>Avisar sobre novos mitos<small>${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></div>
  <div class="row"><span>Cores do app</span><div class="seg">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
- ${S.ins?`<div class="row"><span>Instalar na tela inicial</span><button class="chip on" data-install>Instalar</button></div>`:''}
+ ${standalone()?'':`<div class="row"><div>Instalar na tela inicial<small>${S.ins?'Pronto para instalar.':'Toque para ver como instalar.'}</small></div><button class="chip on" data-install>Instalar</button></div>`}
  <h2>Dados e manutenção</h2>
  <div class="row"><div>Backup dos favoritos<small>Guarde em arquivo ou traga de outro aparelho.</small></div><span style="display:flex;gap:8px"><button class="chip" data-export>Exportar</button><button class="chip" data-import>Importar</button></span></div>
  ${S.hist.length?`<button class="row" data-clearhist><span>Limpar lidos recentemente</span><span>✕</span></button>`:''}
@@ -269,15 +351,20 @@ function setZoom(d){
 }
 function exportFav(){
  if(!S.fav.length){toast('Nenhum favorito para exportar');return}
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S.fav,null,1)],{type:'application/json'}));
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({v:2,favs:S.fav,cols:S.cols},null,1)],{type:'application/json'}));
  a.download='favoritos-portal-dos-mitos.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
 $('#imp').addEventListener('change',async e=>{
  const f=e.target.files[0];e.target.value='';if(!f)return;
- try{const arr=JSON.parse(await f.text());let n=0;
-  (Array.isArray(arr)?arr:[]).forEach(x=>{if(x&&typeof x.path==='string'&&x.path.startsWith('/')&&!S.fav.some(y=>y.path===x.path)){
-   S.fav.push({path:x.path.slice(0,300),title:String(x.title||x.path).slice(0,200),img:typeof x.img==='string'&&x.img.startsWith('https:')?x.img:'',t:+x.t||Date.now()});n++}});
-  store.set('favs',S.fav);syncUI();toast(n+' favoritos importados');
+ try{
+  const data=JSON.parse(await f.text()),favs=Array.isArray(data)?data:(data.favs||[]),cols=Array.isArray(data)?[]:(data.cols||[]);
+  const idmap={};
+  cols.forEach(c=>{if(!c||typeof c.name!=='string')return;let ex=S.cols.find(x=>x.name===c.name);if(!ex){ex={id:'c'+Math.random().toString(36).slice(2,9),name:c.name.slice(0,40)};S.cols.push(ex)}idmap[c.id]=ex.id});
+  let n=0;
+  favs.forEach(x=>{if(x&&typeof x.path==='string'&&x.path.startsWith('/')&&!S.fav.some(y=>y.path===x.path)){
+   S.fav.push({path:x.path.slice(0,300),title:String(x.title||x.path).slice(0,200),img:typeof x.img==='string'&&x.img.startsWith('https:')?x.img:'',t:+x.t||Date.now(),
+    cols:Array.isArray(x.cols)?x.cols.map(i=>idmap[i]).filter(Boolean):[],tags:Array.isArray(x.tags)?x.tags.map(String).slice(0,20):undefined});n++}});
+  saveFav();syncUI();toast(n+' favoritos importados');
  }catch(_){toast('Arquivo inválido')}
 });
 async function updateApp(){
@@ -288,7 +375,11 @@ async function updateApp(){
 }
 
 /* ---------- utilitários ---------- */
-let tt;function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',3600)}
+let tt;function toast(m,label,fn){
+ const t=$('#toast');S.toastFn=fn||null;
+ t.innerHTML=`<span>${esc(m)}</span>${label?`<button data-toastact>${esc(label)}</button>`:''}`;
+ t.style.display='flex';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',label?6000:3600);
+}
 function applyTheme(){const r=document.documentElement;S.theme==='blog'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',S.theme);$('#tc').content=getComputedStyle(r).getPropertyValue('--hdr').trim()||'#1f080b'}
 function online(){$('#off').classList.toggle('on',!navigator.onLine)}
 addEventListener('online',online);addEventListener('offline',online);
@@ -302,14 +393,27 @@ document.addEventListener('click',e=>{
   if(S.sec===k&&!S.panel){resetSection();return}
   show(k);return}
  if(d.sec){show(d.sec);return}
- if(d.favgo!==undefined){const f=S.fav[+d.favgo];if(f)goPost(f.path);return}
- if(d.favdel!==undefined){S.fav.splice(+d.favdel,1);store.set('favs',S.fav);renderFavs();syncUI();return}
- if(t.id==='bF'){toggleFav();return}
+ if('toastact' in d){const fn=S.toastFn;$('#toast').style.display='none';if(fn)fn();return}
+ if('sheetclose' in d){closeSheet();return}
+ if(d.favgo!==undefined){goPost(d.favgo);return}
+ if(d.forg!==undefined){openOrganize(d.forg);return}
+ if(d.fcol!==undefined){S.favCol=d.fcol;S.favTag='';renderFavBody();return}
+ if(d.ftag!==undefined){S.favTag=S.favTag===d.ftag?'':d.ftag;renderFavBody();return}
+ if(d.fsort){S.favSort=d.fsort;store.set('favSort',S.favSort);renderFavs();return}
+ if('colnew' in d){newCol(d.p);return}
+ if(d.colset){const f=S.fav.find(x=>x.path===d.p);if(f){const i=f.cols.indexOf(d.colset);i>=0?f.cols.splice(i,1):f.cols.push(d.colset);saveFav();openOrganize(d.p)}return}
+ if(d.colren){const c=S.cols.find(x=>x.id===d.colren);const n=c&&(prompt('Novo nome da coleção:',c.name)||'').trim().slice(0,40);if(n){c.name=n;saveFav();renderFavBody()}return}
+ if(d.coldel){const c=S.cols.find(x=>x.id===d.coldel);if(c&&confirm('Excluir a coleção "'+c.name+'"? Os mitos continuam nos favoritos.')){S.cols=S.cols.filter(x=>x.id!==c.id);S.fav.forEach(f=>f.cols=f.cols.filter(i=>i!==c.id));S.favCol='';saveFav();renderFavBody()}return}
+ if(d.favrm){const i=S.fav.findIndex(x=>x.path===d.favrm);if(i>=0){const [x]=S.fav.splice(i,1);saveFav();closeSheet();syncUI();toast('Removido dos favoritos','Desfazer',()=>{S.fav.splice(Math.min(i,S.fav.length),0,x);saveFav();syncUI();if(S.panel==='fav')renderFavs()})}return}
+  if(t.id==='bF'){toggleFav();return}
  if(t.id==='bS'){const s=$('#sbar');s.classList.toggle('on');if(s.classList.contains('on'))$('#q').focus();return}
  if(t.id==='banner'){t.classList.remove('on');if(S.latest){S.newest=S.latest.id;goPost(S.latest.path)}return}
  if(d.theme){S.theme=d.theme;store.set('theme',S.theme);applyTheme();renderMore();return}
  if('notif' in d){toggleNotif();return}
- if('install' in d){S.ins.prompt();S.ins=null;renderMore();return}
+ if('install' in d){
+  if(S.ins){const p=S.ins;S.ins=null;p.prompt();p.userChoice.then(r=>{if(r.outcome==='accepted')toast('Instalando…');renderMore()})}
+  else installHelp();
+  return}
  if('rand' in d){randomMyth();return}
  if(d.goto){goPost(d.goto);return}
  if(d.hist!==undefined){const h=S.hist[+d.hist];if(h)goPost(h.path);return}
@@ -322,11 +426,20 @@ document.addEventListener('click',e=>{
  if('update' in d){updateApp();return}
  if('ext' in d){window.open(BLOG,'_blank','noopener')}
 });
+document.addEventListener('input',e=>{if(e.target.id==='fq'){S.favQ=e.target.value;renderFavBody()}});
 $('#q').addEventListener('keydown',e=>{
  if(e.key!=='Enter')return;const v=e.target.value.trim();if(!v)return;
  e.target.blur();$('#sbar').classList.remove('on');goPost('/search?q='+encodeURIComponent(v));
 });
-addEventListener('beforeinstallprompt',e=>{e.preventDefault();S.ins=e});
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();S.ins=e;if(S.panel==='more')renderMore()});
+addEventListener('appinstalled',()=>{S.ins=null;toast('App instalado!');if(S.panel==='more')renderMore()});
+function installHelp(){
+ const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua),and=/Android/.test(ua);
+ const how=ios?'No Safari, toque em <b>Compartilhar</b> (o quadrado com uma seta) e depois em <b>Adicionar à Tela de Início</b>.'
+  :and?'No Chrome, toque no menu <b>⋮</b> (canto superior direito) e escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.'
+  :'No Chrome ou no Edge, clique no ícone de instalação na barra de endereços, ou abra o menu e escolha <b>Instalar</b>.';
+ openSheet(`<strong class="sh-t">Instalar o app</strong><p>${how}</p><p>O botão de instalação automática depende do navegador, que decide quando liberá-lo. O caminho acima funciona a qualquer momento.</p><button class="chip on" style="margin-top:10px;width:100%;padding:12px" data-sheetclose>Entendi</button>`);
+}
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
  navigator.serviceWorker.register('sw.js').catch(()=>{});
  navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.go)goPost(e.data.go)});
