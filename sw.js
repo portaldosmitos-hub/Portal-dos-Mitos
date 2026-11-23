@@ -1,5 +1,5 @@
-const SHELL='pdm-shell-v4',BLOG='https://portal-dos-mitos.blogspot.com';
-self.addEventListener('install',e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(['./','./manifest.webmanifest','./icon.svg'])).then(()=>self.skipWaiting()))});
+const SHELL='pdm-shell-v5',BLOG='https://portal-dos-mitos.blogspot.com';
+self.addEventListener('install',e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(['./','./manifest.webmanifest','./logo-topo.png','./icon-192.png','./favicon.png'])).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n.startsWith('pdm-shell')&&n!==SHELL).map(n=>caches.delete(n)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{
   const r=e.request;
@@ -16,7 +16,7 @@ async function check(){
   if(last&&last!==id){
     const txt=(en.content?en.content.$t:'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,120);
     const href=(en.link.find(l=>l.rel==='alternate')||{}).href||BLOG;
-    await self.registration.showNotification('Novo mito: '+en.title.$t,{body:txt,icon:'icon.svg',badge:'icon.svg',tag:'mito-'+id,data:{path:new URL(href).pathname}});
+    await self.registration.showNotification('Novo mito: '+en.title.$t,{body:txt,icon:'icon-192.png',badge:'icon-192.png',tag:'mito-'+id,data:{path:new URL(href).pathname}});
   }
   await meta.put('/lastseen',new Response(id));
 }

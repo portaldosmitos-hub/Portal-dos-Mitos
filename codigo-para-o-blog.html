@@ -1,0 +1,48 @@
+<!-- ===== PORTAL DOS MITOS: integração com o app =====
+     Cole este bloco no tema do Blogger, logo ANTES da linha </body>
+     (Tema > seta ao lado de "Personalizar" > Editar HTML).
+     Só tem efeito quando o blog é aberto dentro do app. O site normal não muda. -->
+<script>
+//<![CDATA[
+(function(){
+  var APP='portaldosmitos-hub.github.io';
+  try{
+    if(window.self===window.top)return;
+    var ao=window.location.ancestorOrigins;
+    if(ao&&ao.length){var ok=false;for(var i=0;i<ao.length;i++){if(ao[i].indexOf(APP)>-1)ok=true}if(!ok)return}
+  }catch(e){}
+  var d=document;
+  d.documentElement.className+=' pdm-app';
+  /* Esconde tudo o que fica acima do conteúdo principal (banner e menu).
+     Elementos flutuantes (position:fixed) são mantidos. */
+  var SEL=['#Blog1','.blog-posts','main','#main','.main-inner','article','.post'];
+  function hide(){
+    var m=null;
+    for(var i=0;i<SEL.length;i++){m=d.querySelector(SEL[i]);if(m)break}
+    if(!m)return;
+    var n=m;
+    while(n!==d.body){
+      var p=n.parentNode;
+      if(!p)break;
+      for(var s=p.firstElementChild;s&&s!==n;s=s.nextElementSibling){
+        if(/^(SCRIPT|STYLE|LINK|META|NOSCRIPT)$/.test(s.tagName))continue;
+        if(window.getComputedStyle(s).position==='fixed')continue;
+        s.style.setProperty('display','none','important');
+      }
+      n=p;
+    }
+  }
+  /* Informa ao app qual página está aberta (usado pelos Favoritos). */
+  function send(){
+    try{
+      var img=d.querySelector('.post-body img, #Blog1 img, article img');
+      var t=d.title.replace(/^Portal dos Mitos:\s*/,'').replace(/\s+/g,' ').trim()||'Portal dos Mitos';
+      window.parent.postMessage({type:'pdm:page',url:location.href.split('#')[0],title:t,img:img?img.src:''},'*');
+    }catch(e){}
+  }
+  hide();send();
+  d.addEventListener('DOMContentLoaded',function(){hide();send()});
+  window.addEventListener('load',function(){hide();send()});
+})();
+//]]>
+</script>

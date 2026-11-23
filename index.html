@@ -3,76 +3,89 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#b01620" id="tc">
+<meta name="theme-color" content="#1f080b" id="tc">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg">
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Portal dos Mitos</title>
 <style>
 /* Vermelho do blog por padrão. Para ajustar o tom, altere --brand. */
-:root{--bg:#2a0c10;--surf:#3a1219;--ink:#f7ece8;--mute:#d1a9a3;--line:#5c242b;--brand:#b01620;--acc:#ff8a80;--onb:#fff;--ui:system-ui,-apple-system,"Segoe UI",sans-serif;--hh:52px;--nh:60px}
-:root[data-theme=light]{--bg:#f7f2f1;--surf:#fff;--ink:#2b1517;--mute:#6d5557;--line:#e6d9d7;--acc:#b01620}
-:root[data-theme=dark]{--bg:#141112;--surf:#221c1d;--ink:#f1e9e8;--mute:#aa9b9a;--line:#3a3132;--brand:#c8232e;--acc:#ff7b82}
+:root{--bg:#2a0c10;--surf:#3a1219;--hdr:#1f080b;--ink:#f7ece8;--mute:#d1a9a3;--line:#5c242b;--brand:#b01620;--acc:#ff8a80;--onb:#fff;--ui:system-ui,-apple-system,"Segoe UI",sans-serif;--hh:62px;--nh:60px}
+:root[data-theme=light]{--bg:#f7f2f1;--surf:#fff;--hdr:#fffaf9;--ink:#2b1517;--mute:#6d5557;--line:#e6d9d7;--acc:#b01620}
+:root[data-theme=dark]{--bg:#141112;--surf:#221c1d;--hdr:#0f0d0e;--ink:#f1e9e8;--mute:#aa9b9a;--line:#3a3132;--brand:#c8232e;--acc:#ff7b82}
 *{box-sizing:border-box;margin:0}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--ui)}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-header{position:fixed;top:0;left:0;right:0;z-index:5;height:calc(var(--hh) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 14px 0;background:var(--brand);color:var(--onb);display:flex;align-items:center;gap:10px}
-header b{font:700 20px/1 Georgia,serif;flex:1;letter-spacing:.3px}
-.ic{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:17px;border:1px solid rgba(255,255,255,.45)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+header{position:fixed;top:0;left:0;right:0;z-index:5;height:calc(var(--hh) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0;background:var(--hdr);border-bottom:3px solid var(--brand);display:flex;align-items:center;gap:6px}
+#logo{flex:1;height:100%;display:flex;align-items:center;justify-content:flex-start;padding:4px 0}
+#logo img{height:52px;width:auto;display:block}
+.ic{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:20px;color:var(--ink)}
+.ic.on{color:#ffc94d}
+#sbar{position:fixed;z-index:5;left:0;right:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));padding:10px 12px;background:var(--hdr);border-bottom:1px solid var(--line);display:none}
+#sbar.on{display:block}
+#sbar input{width:100%;padding:11px 16px;border-radius:24px;border:1px solid var(--line);background:var(--surf);color:var(--ink);font:16px var(--ui)}
 #views{position:fixed;left:0;right:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));bottom:calc(var(--nh) + env(safe-area-inset-bottom,0px));background:#fff}
 .fr{position:absolute;inset:0;overflow:hidden;visibility:hidden;background:var(--bg)}
 .fr.on{visibility:visible}
-.fr iframe{border:0;display:block;background:#fff}
+.fr iframe{border:0;display:block;width:100%;height:100%;background:#fff;position:relative}
 .ld{position:absolute;inset:0;display:grid;place-items:center;color:var(--mute);font-size:14px}
 .fr.ok .ld{display:none}
-.fr iframe{position:relative}
 nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--surf);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:flex;height:calc(var(--nh) + env(safe-area-inset-bottom,0px))}
 nav button{flex:1;font-size:11px;color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 nav button b{font-size:20px;font-weight:400}
 nav .on{color:var(--acc);font-weight:700}
-#banner{position:fixed;z-index:8;left:12px;right:12px;top:calc(var(--hh) + 8px + env(safe-area-inset-top,0px));padding:12px 14px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:600;text-align:center;display:none}
+#banner{position:fixed;z-index:8;left:12px;right:12px;top:calc(var(--hh) + 10px + env(safe-area-inset-top,0px));padding:12px 14px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:600;text-align:center;display:none}
 #banner.on{display:block}
 #off{position:fixed;z-index:7;left:0;right:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));background:#000c;color:#fff;font-size:13px;text-align:center;padding:6px;display:none}
 #off.on{display:block}
-#more{position:fixed;z-index:9;left:0;right:0;bottom:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));background:var(--bg);overflow-y:auto;display:none;padding:8px 16px calc(var(--nh) + 24px + env(safe-area-inset-bottom,0px))}
-#more.on{display:block}
-#more h2{font:700 15px var(--ui);color:var(--mute);margin:20px 0 4px}
+.panel{position:fixed;z-index:9;left:0;right:0;bottom:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));background:var(--bg);overflow-y:auto;display:none;padding:8px 16px calc(var(--nh) + 24px + env(safe-area-inset-bottom,0px))}
+.panel.on{display:block}
+.panel h2{font:700 15px var(--ui);color:var(--mute);margin:20px 0 4px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
 .row small{display:block;color:var(--mute);margin-top:3px;font-size:12px;line-height:1.4}
 .seg{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;flex:none}
 .seg button{padding:8px 12px;font-size:13px}.seg .on{background:var(--brand);color:var(--onb)}
 .chip{padding:7px 14px;border-radius:20px;border:1px solid var(--line);font-size:14px;background:var(--surf)}
 .chip.on{background:var(--brand);color:var(--onb);border-color:var(--brand)}
-#toast{position:fixed;left:50%;bottom:calc(var(--nh) + 20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:30;display:none;max-width:90%}
+.fav{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.fav .go{flex:1;display:flex;align-items:center;gap:12px;text-align:left;min-width:0}
+.fav .th{flex:none;width:56px;height:72px;border-radius:10px;background:var(--surf) center/cover}
+.fav strong{font:700 18px/1.2 Georgia,serif;display:block}
+.fav small{color:var(--mute);font-size:12px}
+.empty{padding:48px 12px;text-align:center;color:var(--mute);line-height:1.6}
+#toast{position:fixed;left:50%;bottom:calc(var(--nh) + 20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:30;display:none;max-width:90%;text-align:center}
 </style>
 </head>
 <body>
-<header><b id="ttl">Portal dos Mitos</b><button class="ic" id="bReload" aria-label="Voltar ao início desta seção" title="Recarregar seção">↻</button></header>
+<header>
+  <button id="logo" data-logo aria-label="Portal dos Mitos, ir para o início"><img src="logo-topo.png" alt="Portal dos Mitos"></button>
+  <button class="ic" id="bS" aria-label="Buscar">🔍</button>
+  <button class="ic" id="bF" aria-label="Favoritar esta página">☆</button>
+</header>
+<div id="sbar"><input id="q" type="search" placeholder="Buscar no Portal dos Mitos" enterkeyhint="search"></div>
 <div id="off">Sem conexão. O conteúdo do blog precisa de internet.</div>
 <button id="banner"></button>
 <div id="views"></div>
-<div id="more"></div>
+<div class="panel" id="favs"></div>
+<div class="panel" id="more"></div>
 <nav id="nav"></nav>
 <div id="toast" role="status"></div>
 
 <script>
 const BLOG='https://portal-dos-mitos.blogspot.com';
+const HOST=/^portal-dos-mitos\.blogspot\.com(\.br)?$/;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const SEC={home:'/',mapa:'/p/indice-do-blog.html',glos:'/p/glossario.html',sobre:'/p/sobre-nos.html',blog:'/p/sobre-o-blog.html',parc:'/p/parceria.html',cont:'/p/contate-nos.html'};
 const TITLES={home:'Portal dos Mitos',mapa:'Mapa do Blog',glos:'Glossário',sobre:'Sobre o Autor',blog:'Sobre o Blog',parc:'Parcerias',cont:'Contato'};
-const NAV=[['home','🏛️','Início'],['mapa','🗺️','Mapa'],['glos','📖','Glossário'],['more','☰','Mais']];
-const S={sec:'home',mode:store.get('mode','fit'),theme:store.get('theme','blog'),notif:store.get('notif',false),newest:null,latest:null,ins:null};
+const NAV=[['home','🏛️','Início'],['mapa','🗺️','Mapa'],['glos','📖','Glossário'],['fav','🔖','Favoritos'],['more','☰','Mais']];
+const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 const frames={};
+const src=p=>BLOG+p;
 
 /* ---------- molduras com o blog real ---------- */
-const src=p=>BLOG+p+(S.mode==='m'?(p.includes('?')?'&':'?')+'m=1':'');
-function layout(o){
- const f=o.f,b=o.box;
- if(S.mode==='desk'){const s=innerWidth/1100;f.style.cssText=`width:1100px;height:${b.clientHeight/s}px;transform:scale(${s});transform-origin:0 0`}
- else f.style.cssText='width:100%;height:100%';
-}
 function ensure(key,path){
  if(frames[key])return frames[key];
  const box=document.createElement('div');box.className='fr';box.innerHTML='<div class="ld">Carregando o Portal dos Mitos…</div>';
@@ -83,31 +96,56 @@ function ensure(key,path){
  f.onload=()=>box.classList.add('ok');
  f.src=src(path||SEC[key]);
  box.appendChild(f);$('#views').appendChild(box);
- const o=frames[key]={box,f};layout(o);return o;
+ return frames[key]={box,f,cur:null};
 }
 function show(key,path){
- S.sec=key;ensure(key,path);
+ S.sec=key;S.panel=null;ensure(key,path);
  Object.entries(frames).forEach(([k,v])=>v.box.classList.toggle('on',k===key));
- $('#ttl').textContent=TITLES[key];
- $('#more').classList.remove('on');
- renderNav();
+ syncUI();
 }
-function renderNav(){
- const cur=$('#more').classList.contains('on')?'more':(['home','mapa','glos'].includes(S.sec)?S.sec:'more');
+function syncUI(){
+ $('#favs').classList.toggle('on',S.panel==='fav');
+ $('#more').classList.toggle('on',S.panel==='more');
+ const cur=S.panel||(['home','mapa','glos'].includes(S.sec)?S.sec:'more');
  $('#nav').innerHTML=NAV.map(([k,i,l])=>`<button data-nav="${k}" class="${cur===k?'on':''}"><b>${i}</b>${l}</button>`).join('');
+ const c=(frames[S.sec]||{}).cur;
+ const b=$('#bF');b.hidden=!!S.panel;const on=!!(c&&S.fav.some(f=>f.path===c.path));b.textContent=on?'★':'☆';b.classList.toggle('on',on);
 }
 function goPost(path){
- const o=ensure('home');o.box.classList.remove('ok');o.f.src=src(path);show('home');
+ const o=ensure('home');o.box.classList.remove('ok');o.cur=null;o.f.src=src(path);show('home');
 }
 function resetSection(){
- const o=frames[S.sec];if(!o)return;o.box.classList.remove('ok');o.f.src=src(SEC[S.sec]);toast('Seção recarregada');
+ const o=frames[S.sec];if(!o)return;o.box.classList.remove('ok');o.cur=null;o.f.src=src(SEC[S.sec]);syncUI();
 }
-function setMode(m){
- S.mode=m;store.set('mode',m);
- Object.values(frames).forEach(v=>v.box.remove());for(const k in frames)delete frames[k];
- show(S.sec);renderMore();
+
+/* a página do blog informa qual página está aberta (código colado no tema) */
+addEventListener('message',e=>{
+ const d=e.data;if(!d||d.type!=='pdm:page')return;
+ let u;try{u=new URL(d.url)}catch(_){return}
+ if(!HOST.test(u.hostname))return;
+ const path=(u.pathname+u.search).replace(/([?&])m=1&?/,'$1').replace(/[?&]$/,'');
+ for(const o of Object.values(frames)){
+  if(o.f.contentWindow===e.source){
+   o.cur={path,title:String(d.title||'Portal dos Mitos').slice(0,200),img:typeof d.img==='string'&&d.img.startsWith('https:')?d.img:''};
+   o.box.classList.add('ok');
+  }
+ }
+ syncUI();
+});
+
+/* ---------- favoritos ---------- */
+function toggleFav(){
+ const c=(frames[S.sec]||{}).cur;
+ if(!c){toast('Para favoritar, o blog precisa do código do app. Veja as instruções.');return}
+ if(c.path==='/'){toast('Abra um mito e toque na estrela para guardá-lo.');return}
+ const i=S.fav.findIndex(f=>f.path===c.path);
+ if(i>=0){S.fav.splice(i,1);toast('Removido dos favoritos')}else{S.fav.unshift({path:c.path,title:c.title,img:c.img,t:Date.now()});toast('Salvo nos favoritos')}
+ store.set('favs',S.fav);syncUI();
 }
-addEventListener('resize',()=>Object.values(frames).forEach(layout));
+function renderFavs(){
+ $('#favs').innerHTML=S.fav.length?S.fav.map((f,i)=>`<div class="fav"><button class="go" data-favgo="${i}"><div class="th" ${f.img?`style="background-image:url('${esc(f.img)}')"`:''}></div><div><strong>${esc(f.title)}</strong><small>Salvo em ${new Date(f.t).toLocaleDateString('pt-BR')}</small></div></button><button class="ic" data-favdel="${i}" aria-label="Remover">✕</button></div>`).join('')
+ :`<div class="empty">Você ainda não guardou nenhum mito.<br>Abra uma página do blog e toque em ☆ no topo.</div>`;
+}
 
 /* ---------- menu Mais ---------- */
 function renderMore(){
@@ -117,7 +155,6 @@ function renderMore(){
  <h2>Ajustes do app</h2>
  <div class="row"><div>Avisar sobre novos mitos<small>${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></div>
  <div class="row"><span>Cores do app</span><div class="seg">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
- <div class="row"><div>Exibição do blog<small>Se o blog ficar pequeno ou cortado, teste outra opção.</small></div><div class="seg">${[['fit','Ajustada'],['desk','Desktop'],['m','Móvel']].map(([k,l])=>`<button data-mode="${k}" class="${S.mode===k?'on':''}">${l}</button>`).join('')}</div></div>
  ${S.ins?`<div class="row"><span>Instalar na tela inicial</span><button class="chip on" data-install>Instalar</button></div>`:''}
  <button class="row" data-ext><span>Abrir o blog no navegador</span><span>↗</span></button>
  <p style="color:var(--mute);font-size:12px;line-height:1.5;margin-top:18px">Este app mostra o Portal dos Mitos diretamente do blog, com todos os recursos do site. Conteúdo e imagens: Portal dos Mitos.</p>`;
@@ -137,7 +174,7 @@ async function latest(){
 const seen=async()=>{try{const r=await (await caches.open('pdm-meta')).match('/lastseen');return r?await r.text():null}catch(e){return null}};
 const setSeen=async id=>{try{await (await caches.open('pdm-meta')).put('/lastseen',new Response(id))}catch(e){}};
 async function notify(n){
- const o={body:n.text,icon:'icon.svg',badge:'icon.svg',tag:'mito-'+n.id,data:{path:n.path}};
+ const o={body:n.text,icon:'icon-192.png',badge:'icon-192.png',tag:'mito-'+n.id,data:{path:n.path}};
  try{const r=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();if(r)await r.showNotification('Novo mito: '+n.title,o);else new Notification('Novo mito: '+n.title,o)}catch(e){}
 }
 async function toggleNotif(){
@@ -159,25 +196,33 @@ async function poll(){
 setInterval(poll,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
 
 /* ---------- utilitários ---------- */
-let tt;function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',3200)}
-function applyTheme(){const r=document.documentElement;S.theme==='blog'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',S.theme);$('#tc').content=getComputedStyle(r).getPropertyValue('--brand').trim()||'#b01620'}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',3600)}
+function applyTheme(){const r=document.documentElement;S.theme==='blog'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',S.theme);$('#tc').content=getComputedStyle(r).getPropertyValue('--hdr').trim()||'#1f080b'}
 function online(){$('#off').classList.toggle('on',!navigator.onLine)}
 addEventListener('online',online);addEventListener('offline',online);
 
 document.addEventListener('click',e=>{
  const t=e.target.closest('button');if(!t)return;const d=t.dataset;
+ if('logo' in d){show('home');return}
  if(d.nav){
-  if(d.nav==='more'){const m=$('#more');m.classList.toggle('on');if(m.classList.contains('on'))renderMore();renderNav();return}
-  if(S.sec===d.nav&&!$('#more').classList.contains('on')){resetSection();return}
-  show(d.nav);return}
+  const k=d.nav;
+  if(k==='fav'||k==='more'){S.panel=S.panel===k?null:k;if(S.panel==='fav')renderFavs();if(S.panel==='more')renderMore();syncUI();return}
+  if(S.sec===k&&!S.panel){resetSection();return}
+  show(k);return}
  if(d.sec){show(d.sec);return}
- if(t.id==='bReload'){resetSection();return}
+ if(d.favgo!==undefined){const f=S.fav[+d.favgo];if(f)goPost(f.path);return}
+ if(d.favdel!==undefined){S.fav.splice(+d.favdel,1);store.set('favs',S.fav);renderFavs();syncUI();return}
+ if(t.id==='bF'){toggleFav();return}
+ if(t.id==='bS'){const s=$('#sbar');s.classList.toggle('on');if(s.classList.contains('on'))$('#q').focus();return}
  if(t.id==='banner'){t.classList.remove('on');if(S.latest){S.newest=S.latest.id;goPost(S.latest.path)}return}
  if(d.theme){S.theme=d.theme;store.set('theme',S.theme);applyTheme();renderMore();return}
- if(d.mode){setMode(d.mode);return}
  if('notif' in d){toggleNotif();return}
  if('install' in d){S.ins.prompt();S.ins=null;renderMore();return}
  if('ext' in d){window.open(BLOG,'_blank','noopener')}
+});
+$('#q').addEventListener('keydown',e=>{
+ if(e.key!=='Enter')return;const v=e.target.value.trim();if(!v)return;
+ e.target.blur();$('#sbar').classList.remove('on');goPost('/search?q='+encodeURIComponent(v));
 });
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();S.ins=e});
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
