@@ -39,7 +39,7 @@ nav .on{color:var(--acc);font-weight:700}
 #banner.on{display:block}
 #off{position:fixed;z-index:7;left:0;right:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));background:#000c;color:#fff;font-size:13px;text-align:center;padding:6px;display:none}
 #off.on{display:block}
-.panel{position:fixed;z-index:9;left:0;right:0;bottom:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));background:var(--bg);overflow-y:auto;display:none;padding:8px 16px calc(var(--nh) + 24px + env(safe-area-inset-bottom,0px))}
+.panel{position:fixed;z-index:4;left:0;right:0;bottom:calc(var(--nh) + env(safe-area-inset-bottom,0px));top:calc(var(--hh) + env(safe-area-inset-top,0px));background:var(--bg);overflow-y:auto;display:none;padding:8px 16px 28px}
 .panel.on{display:block}
 .panel h2{font:700 15px var(--ui);color:var(--mute);margin:20px 0 4px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
@@ -54,6 +54,13 @@ nav .on{color:var(--acc);font-weight:700}
 .fav strong{font:700 18px/1.2 Georgia,serif;display:block}
 .fav small{color:var(--mute);font-size:12px}
 .empty{padding:48px 12px;text-align:center;color:var(--mute);line-height:1.6}
+button.row{cursor:pointer}
+.row .l{display:flex;align-items:center;gap:12px}
+.day{display:flex;gap:14px;width:100%;text-align:left;padding:14px;margin:12px 0 4px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}
+.day .th{flex:none;width:76px;height:96px;border-radius:12px;background:var(--bg) center/cover}
+.day small{color:var(--acc);font-weight:700;letter-spacing:.5px;font-size:11px;text-transform:uppercase}
+.day strong{font:700 22px/1.1 Georgia,serif;display:block;margin:4px 0}
+.day p{font-size:13px;color:var(--mute);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 #toast{position:fixed;left:50%;bottom:calc(var(--nh) + 20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:30;display:none;max-width:90%;text-align:center}
 </style>
 </head>
@@ -71,6 +78,7 @@ nav .on{color:var(--acc);font-weight:700}
 <div class="panel" id="more"></div>
 <nav id="nav"></nav>
 <div id="toast" role="status"></div>
+<input type="file" id="imp" accept="application/json,.json" hidden>
 
 <script>
 const BLOG='https://portal-dos-mitos.blogspot.com';
@@ -82,10 +90,16 @@ const SEC={home:'/',mapa:'/p/indice-do-blog.html',glos:'/p/glossario.html',sobre
 const TITLES={home:'Portal dos Mitos',mapa:'Mapa do Blog',glos:'Glossário',sobre:'Sobre o Autor',blog:'Sobre o Blog',parc:'Parcerias',cont:'Contato'};
 const NAV=[['home','🏛️','Início'],['mapa','🗺️','Mapa'],['glos','📖','Glossário'],['fav','🔖','Favoritos'],['more','☰','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
+Object.assign(S,{zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
+const VER='1.4';
 const frames={};
 const src=p=>BLOG+p;
 
 /* ---------- molduras com o blog real ---------- */
+function layout(o){
+ const z=S.zoom;
+ o.f.style.cssText=z===1?'width:100%;height:100%':`width:${100/z}%;height:${100/z}%;transform:scale(${z});transform-origin:0 0`;
+}
 function ensure(key,path){
  if(frames[key])return frames[key];
  const box=document.createElement('div');box.className='fr';box.innerHTML='<div class="ld">Carregando o Portal dos Mitos…</div>';
@@ -96,7 +110,7 @@ function ensure(key,path){
  f.onload=()=>box.classList.add('ok');
  f.src=src(path||SEC[key]);
  box.appendChild(f);$('#views').appendChild(box);
- return frames[key]={box,f,cur:null};
+ const o=frames[key]={box,f,cur:null};layout(o);return o;
 }
 function show(key,path){
  S.sec=key;S.panel=null;ensure(key,path);
@@ -128,6 +142,7 @@ addEventListener('message',e=>{
   if(o.f.contentWindow===e.source){
    o.cur={path,title:String(d.title||'Portal dos Mitos').slice(0,200),img:typeof d.img==='string'&&d.img.startsWith('https:')?d.img:''};
    o.box.classList.add('ok');
+   S.linked=true;pushHist(o.cur);
   }
  }
  syncUI();
@@ -151,13 +166,26 @@ function renderFavs(){
 function renderMore(){
  const np='Notification' in window?Notification.permission:'unsupported';
  const link=(k,l)=>`<button class="row" data-sec="${k}"><span>${l}</span><span>›</span></button>`;
- $('#more').innerHTML=`<h2>Páginas do blog</h2>${link('sobre','Sobre o Autor')}${link('blog','Sobre o Blog')}${link('parc','Parcerias')}${link('cont','Contato')}
+ const act=(a,i,l,r='›')=>`<button class="row" data-${a}><span class="l"><span>${i}</span><span>${l}</span></span><span>${r}</span></button>`;
+ $('#more').innerHTML=`<div id="dayCard">${dayHtml()}</div>
+ ${act('rand','🎲','Mito aleatório')}
+ ${S.hist.length?`<h2>Lidos recentemente</h2>${S.hist.slice(0,6).map((h,i)=>`<button class="row" data-hist="${i}"><span>${esc(h.title)}</span><span>›</span></button>`).join('')}`:''}
+ <h2>Esta página</h2>
+ ${act('share','↗','Compartilhar','')}${act('copy','🔗','Copiar link','')}
+ <div class="row"><span>Tamanho do texto</span><div class="seg"><button data-zoom="-1" aria-label="Diminuir">A−</button><span style="padding:8px 6px;font-size:13px;color:var(--mute)">${Math.round(S.zoom*100)}%</span><button data-zoom="1" aria-label="Aumentar">A+</button></div></div>
+ <h2>Páginas do blog</h2>${link('sobre','Sobre o Autor')}${link('blog','Sobre o Blog')}${link('parc','Parcerias')}${link('cont','Contato')}
  <h2>Ajustes do app</h2>
  <div class="row"><div>Avisar sobre novos mitos<small>${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></div>
  <div class="row"><span>Cores do app</span><div class="seg">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  ${S.ins?`<div class="row"><span>Instalar na tela inicial</span><button class="chip on" data-install>Instalar</button></div>`:''}
- <button class="row" data-ext><span>Abrir o blog no navegador</span><span>↗</span></button>
- <p style="color:var(--mute);font-size:12px;line-height:1.5;margin-top:18px">Este app mostra o Portal dos Mitos diretamente do blog, com todos os recursos do site. Conteúdo e imagens: Portal dos Mitos.</p>`;
+ <h2>Dados e manutenção</h2>
+ <div class="row"><div>Backup dos favoritos<small>Guarde em arquivo ou traga de outro aparelho.</small></div><span style="display:flex;gap:8px"><button class="chip" data-export>Exportar</button><button class="chip" data-import>Importar</button></span></div>
+ ${S.hist.length?`<button class="row" data-clearhist><span>Limpar lidos recentemente</span><span>✕</span></button>`:''}
+ <div class="row"><div>Integração com o blog<small>Necessária para Favoritos, Lidos recentemente e Compartilhar.</small></div><span>${S.linked?'Ativa ✓':'Não detectada'}</span></div>
+ ${act('update','⟳','Atualizar o app','')}
+ ${act('ext','↗','Abrir o blog no navegador','')}
+ <p style="color:var(--mute);font-size:12px;line-height:1.5;margin-top:18px">Este app mostra o Portal dos Mitos diretamente do blog, com todos os recursos do site. Conteúdo e imagens: Portal dos Mitos. Versão ${VER}.</p>`;
+ fillDay();
 }
 
 /* ---------- novos posts e notificações ---------- */
@@ -169,7 +197,7 @@ async function latest(){
  try{const r=await fetch(u+'&alt=json');if(!r.ok)throw 0;j=await r.json()}catch(e){j=await jsonp(u)}
  const e=j.feed.entry[0],html=e.content?e.content.$t:'';
  const href=(e.link.find(l=>l.rel==='alternate')||{}).href||BLOG;
- return{id:e.id.$t.split('post-')[1]||e.id.$t,title:e.title.$t,path:new URL(href).pathname,text:html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').replace(/^۞?\s*ADM \w+\s*/,'').trim().slice(0,120)};
+ return{id:e.id.$t.split('post-')[1]||e.id.$t,title:e.title.$t,path:new URL(href).pathname,text:html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().replace(/^۞?\s*ADM \w+\s*/,'').slice(0,120)};
 }
 const seen=async()=>{try{const r=await (await caches.open('pdm-meta')).match('/lastseen');return r?await r.text():null}catch(e){return null}};
 const setSeen=async id=>{try{await (await caches.open('pdm-meta')).put('/lastseen',new Response(id))}catch(e){}};
@@ -195,6 +223,70 @@ async function poll(){
 }
 setInterval(poll,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
 
+/* ---------- recursos do menu Mais ---------- */
+async function getFeed(params){
+ const u=BLOG+'/feeds/posts/default?'+params;let j;
+ try{const r=await fetch(u+'&alt=json');if(!r.ok)throw 0;j=await r.json()}catch(e){j=await jsonp(u)}
+ return j.feed;
+}
+function info(e){
+ const html=e.content?e.content.$t:'',m=html.match(/<img[^>]+src="([^"]+)"/);
+ const href=(e.link.find(l=>l.rel==='alternate')||{}).href||BLOG;
+ return{title:e.title.$t,path:new URL(href).pathname,img:m?m[1]:'',text:html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim().replace(/^۞?\s*ADM \w+\s*/,'').slice(0,140)};
+}
+async function nth(i){const f=await getFeed('max-results=1&start-index='+i);return{total:+f.openSearch$totalResults.$t,item:f.entry&&f.entry[0]?info(f.entry[0]):null}}
+const dayHtml=()=>S.day?`<button class="day" data-goto="${esc(S.day.path)}"><div class="th" ${S.day.img?`style="background-image:url('${esc(S.day.img)}')"`:''}></div><div><small>Mito do dia</small><strong>${esc(S.day.title)}</strong><p>${esc(S.day.text)}</p></div></button>`:'';
+async function fillDay(){
+ const today=new Date().toLocaleDateString('sv');
+ if(!S.day||S.day.d!==today){
+  try{
+   const n=(await nth(1)).total,idx=((+today.replace(/-/g,''))*7919)%n+1,r=await nth(idx);
+   if(r.item){S.day={d:today,...r.item};store.set('day',S.day)}
+  }catch(e){}
+ }
+ const el=$('#dayCard');if(el)el.innerHTML=dayHtml();
+}
+async function randomMyth(){
+ toast('Sorteando um mito…');
+ try{const t=(await nth(1)).total,r=await nth(1+Math.floor(Math.random()*t));if(r.item)goPost(r.item.path)}
+ catch(e){toast('Não foi possível sortear agora.')}
+}
+function pushHist(c){
+ if(!/^\/\d{4}\/\d{2}\//.test(c.path))return;
+ S.hist=S.hist.filter(h=>h.path!==c.path);S.hist.unshift({path:c.path,title:c.title,img:c.img,t:Date.now()});
+ S.hist=S.hist.slice(0,30);store.set('hist',S.hist);
+}
+function curPage(){const c=(frames[S.sec]||{}).cur;if(!c)toast('Abra uma página do blog primeiro. Requer o código instalado no blog.');return c}
+async function sharePage(){
+ const c=curPage();if(!c)return;const url=BLOG+c.path;
+ try{if(navigator.share)await navigator.share({title:c.title,url});else{await navigator.clipboard.writeText(url);toast('Link copiado')}}catch(_){}
+}
+async function copyLink(){const c=curPage();if(!c)return;try{await navigator.clipboard.writeText(BLOG+c.path);toast('Link copiado')}catch(e){toast('Não foi possível copiar')}}
+const ZS=[.8,.9,1,1.1,1.2,1.3,1.4];
+function setZoom(d){
+ const i=Math.max(0,Math.min(ZS.length-1,ZS.indexOf(S.zoom)+d));
+ S.zoom=ZS[i];store.set('zoom',S.zoom);Object.values(frames).forEach(layout);renderMore();
+}
+function exportFav(){
+ if(!S.fav.length){toast('Nenhum favorito para exportar');return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S.fav,null,1)],{type:'application/json'}));
+ a.download='favoritos-portal-dos-mitos.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+$('#imp').addEventListener('change',async e=>{
+ const f=e.target.files[0];e.target.value='';if(!f)return;
+ try{const arr=JSON.parse(await f.text());let n=0;
+  (Array.isArray(arr)?arr:[]).forEach(x=>{if(x&&typeof x.path==='string'&&x.path.startsWith('/')&&!S.fav.some(y=>y.path===x.path)){
+   S.fav.push({path:x.path.slice(0,300),title:String(x.title||x.path).slice(0,200),img:typeof x.img==='string'&&x.img.startsWith('https:')?x.img:'',t:+x.t||Date.now()});n++}});
+  store.set('favs',S.fav);syncUI();toast(n+' favoritos importados');
+ }catch(_){toast('Arquivo inválido')}
+});
+async function updateApp(){
+ toast('Atualizando o app…');
+ try{const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));
+  const ks=await caches.keys();await Promise.all(ks.filter(k=>k.startsWith('pdm-shell')).map(k=>caches.delete(k)))}catch(e){}
+ location.reload();
+}
+
 /* ---------- utilitários ---------- */
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',3600)}
 function applyTheme(){const r=document.documentElement;S.theme==='blog'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',S.theme);$('#tc').content=getComputedStyle(r).getPropertyValue('--hdr').trim()||'#1f080b'}
@@ -218,6 +310,16 @@ document.addEventListener('click',e=>{
  if(d.theme){S.theme=d.theme;store.set('theme',S.theme);applyTheme();renderMore();return}
  if('notif' in d){toggleNotif();return}
  if('install' in d){S.ins.prompt();S.ins=null;renderMore();return}
+ if('rand' in d){randomMyth();return}
+ if(d.goto){goPost(d.goto);return}
+ if(d.hist!==undefined){const h=S.hist[+d.hist];if(h)goPost(h.path);return}
+ if('share' in d){sharePage();return}
+ if('copy' in d){copyLink();return}
+ if(d.zoom){setZoom(+d.zoom);return}
+ if('export' in d){exportFav();return}
+ if('import' in d){$('#imp').click();return}
+ if('clearhist' in d){S.hist=[];store.set('hist',[]);renderMore();return}
+ if('update' in d){updateApp();return}
  if('ext' in d){window.open(BLOG,'_blank','noopener')}
 });
 $('#q').addEventListener('keydown',e=>{
