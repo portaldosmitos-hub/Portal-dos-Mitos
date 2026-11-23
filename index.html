@@ -49,7 +49,7 @@ header .ic{border-color:rgba(255,255,255,.45)}
 .empty{padding:48px 24px;text-align:center;color:var(--mute);line-height:1.6}
 .empty a,.body a{color:var(--acc)}
 .sec{padding:16px}
-.sec h2{font:700 32px/1 var(--serif);margin-bottom:12px}
+.sec>h2{font:700 32px/1 var(--serif);margin-bottom:12px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
 .row small{display:block;color:var(--mute);margin-top:3px;font-size:12px;line-height:1.4}
 .seg{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;flex:none}
@@ -74,6 +74,14 @@ nav .on{color:var(--acc);font-weight:700}
 .pg{font-size:17px;line-height:1.6}
 .pg li,.pg p{margin:6px 0}
 .pg ul,.pg ol{padding-left:20px}
+.sec .chips{padding:8px 0}
+.pg h1{font:700 36px/1.05 var(--serif);margin-bottom:10px}
+.pg h2{font:700 27px/1.1 var(--serif);margin:24px 0 4px}
+.pg details{border-bottom:1px solid var(--line);padding:10px 0}
+.pg summary{cursor:pointer;font:700 22px/1.2 var(--serif)}
+.pg li{margin:8px 0}
+[id^=verbete-]{scroll-margin-top:84px}
+.flash{background:rgba(255,120,110,.25);border-radius:10px;transition:background .4s}
 .sk{height:112px;margin:14px 16px;border-radius:14px;background:var(--surf)}
 @media(prefers-reduced-motion:no-preference){#reader.on{animation:up .22s ease-out}@keyframes up{from{transform:translateY(24px);opacity:0}}}
 </style>
@@ -107,6 +115,10 @@ const S={tab:'home',posts:[],total:0,label:'',q:'',loading:false,demo:false,offl
  fav:store.get('fav',[]),read:store.get('read',[]),favData:store.get('favData',{}),
  size:store.get('size',19),theme:store.get('theme','blog'),notif:store.get('notif',false)};
 const PAGE=12;
+const BLOGID='1752757016471133553',GLOS_ID='428265161780446766';
+Object.assign(S,{err:[],letter:'',trad:'',fq:'',map:null,mapHtml:''});
+const TR=['Abraâmicas','Africana / Afro-diaspórica','Andina','Brasil / Povos indígenas','Celta / Gaélica','Comparativo / Outros','Egípcia','Eslava','Grega / Romana','Japonesa','Mesoamericana / Indígenas das Américas','Mesopotâmica','Nórdica / Germânica','Oceania','Sul da Ásia'];
+const nz=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const TABS=[['home','🏛️','Início'],['mapa','🗺️','Mapa'],['glos','📖','Glossário'],['fav','🔖','Favoritos'],['cfg','⚙️','Ajustes']];
 const SLUG={mapa:'indice-do-blog',glos:'glossario'};
 
@@ -115,11 +127,14 @@ function jsonp(url){return new Promise((ok,no)=>{const cb='cb'+Date.now()+Math.f
  const t=setTimeout(()=>{no(new Error('timeout'));s.remove()},12000);
  window[cb]=d=>{clearTimeout(t);ok(d);s.remove();delete window[cb]};
  s.onerror=()=>{clearTimeout(t);no(new Error('jsonp'));s.remove()};
- s.src=url+'&alt=json-in-script&callback='+cb;document.head.appendChild(s)})}
+ s.src=url+(url.includes('?')?'&':'?')+'alt=json-in-script&callback='+cb;document.head.appendChild(s)})}
+async function getJSON(url){
+ const q=url.includes('?')?'&':'?';
+ try{const r=await fetch(url+q+'alt=json');if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}
+ catch(e){return await jsonp(url)}
+}
 async function feed(params,label,base='/feeds/posts/default'){
- const url=BLOG+base+(label?'/-/'+encodeURIComponent(label):'')+'?'+params;
- try{const r=await fetch(url+'&alt=json');if(!r.ok)throw 0;return (await r.json()).feed}
- catch(e){return (await jsonp(url)).feed}
+ return (await getJSON(BLOG+base+(label?'/-/'+encodeURIComponent(label):'')+'?'+params)).feed;
 }
 function map(e){
  const html=e.content?e.content.$t:(e.summary?e.summary.$t:'');
@@ -145,15 +160,48 @@ async function load(reset){
 }
 async function getPages(){
  if(S.pages)return S.pages;
- try{const f=await feed('max-results=50',null,'/feeds/pages/default');S.pages=(f.entry||[]).map(map)}catch(e){return []}
- return S.pages;
+ for(const u of [BLOG+'/feeds/pages/default?max-results=50','https://www.blogger.com/feeds/'+BLOGID+'/pages/default?max-results=50']){
+  try{const j=await getJSON(u);const L=((j.feed||{}).entry||[]).map(map);if(L.length){S.pages=L;return L}S.err.push('lista de páginas vazia')}
+  catch(e){S.err.push(String(e.message||e))}
+ }
+ return [];
+}
+function prep(k,html){
+ const d=new DOMParser().parseFromString(clean(html),'text/html');
+ if(k==='glos'){
+  d.querySelectorAll('button,input,select,textarea').forEach(n=>n.remove());
+  [...d.querySelectorAll('*')].forEach(n=>{if(!n.children.length&&/^Nenhum verbete corresponde/.test(n.textContent.trim()))n.remove()});
+ }
+ return d.body.innerHTML;
+}
+async function buildMap(){
+ if(!S.map){
+  const c=store.get('mapcache',null);
+  if(c&&Date.now()-c.t<864e5)S.map=c.d;
+  else{
+   const out=[];let start=1,total=1;
+   while(start<=total){
+    const f=await feed('max-results=500&start-index='+start,null,'/feeds/posts/summary');
+    total=+f.openSearch$totalResults.$t;
+    (f.entry||[]).forEach(e=>out.push([e.title.$t,((e.link.find(l=>l.rel==='alternate')||{}).href||'').replace(BLOG,''),(e.category||[]).map(c=>c.term)]));
+    start+=500;
+   }
+   S.map=out;store.set('mapcache',{t:Date.now(),d:out});
+  }
+ }
+ const g={};
+ S.map.forEach(([t,u,tags])=>(tags.length?tags:['Sem marcador']).forEach(k=>(g[k]=g[k]||[]).push([t,u])));
+ S.mapHtml=Object.keys(g).sort((a,b)=>a.localeCompare(b,'pt')).map(k=>`<details><summary>${esc(k)} <span class="meta">(${g[k].length})</span></summary><ul>${g[k].sort((a,b)=>a[0].localeCompare(b[0],'pt')).map(([t,u])=>`<li><a href="${BLOG+esc(u)}">${esc(t)}</a></li>`).join('')}</ul></details>`).join('');
 }
 async function loadPage(k){
  S.pg[k]='loading';render();
  const L=await getPages();
  const re=k==='mapa'?/mapa|[ií]ndice/i:/gloss/i;
- S.pg[k]=L.find(p=>p.url.includes(SLUG[k]))||L.find(p=>re.test(p.title))||null;
- render();
+ let p=L.find(x=>x.url.includes(SLUG[k]))||L.find(x=>re.test(x.title))||null;
+ if(!p&&k==='glos'){try{p=map((await getJSON('https://www.blogger.com/feeds/'+BLOGID+'/pages/default/'+GLOS_ID+'?v=2')).entry)}catch(e){S.err.push(String(e.message||e))}}
+ if(p)p.clean=prep(k,p.html);
+ if(k==='mapa'&&(!p||p.text.length<400)){try{await buildMap()}catch(e){S.err.push(String(e.message||e))}}
+ S.pg[k]=p;render();
 }
 const known=()=>[...S.posts,...Object.values(S.favData),...S.extra];
 const norm=u=>u.split('?')[0].split('#')[0].replace(/^http:/,'https:');
@@ -225,11 +273,13 @@ function render(){
   else if(S.posts.length<S.total&&!S.demo)h+=`<button class="more" data-more>Carregar mais mitos</button>`;
  }
  if(S.tab==='mapa'||S.tab==='glos'){
-  const p=S.pg[S.tab];
+  const p=S.pg[S.tab],g=S.tab==='glos';
+  const box=(inner,extra='')=>`<div class="sec"><input class="in" id="flt" type="search" value="${esc(S.fq)}" placeholder="${g?'Buscar no glossário':'Buscar no mapa do blog'}">${extra}<div class="body pg" id="pg" style="margin-top:14px">${inner}</div></div>`;
   if(p===undefined||p==='loading')h+=skel;
-  else if(!p)h+=`<div class="empty">Não foi possível carregar esta página agora.<br><a href="${BLOG}/p/${SLUG[S.tab]}.html" target="_blank" rel="noopener">Abrir no navegador</a></div>`;
-  else{p.clean=p.clean||clean(p.html);
-   h+=`<div class="sec"><input class="in" id="flt" type="search" placeholder="${S.tab==='glos'?'Filtrar termos do glossário':'Filtrar o mapa do blog'}"><div class="body pg" id="pg" style="margin-top:14px">${p.clean}</div></div>`}
+  else if(!g&&S.mapHtml&&(!p||p.text.length<400))h+=box(S.mapHtml);
+  else if(!p)h+=`<div class="empty">Não foi possível carregar esta página agora.<br><a href="${BLOG}/p/${SLUG[S.tab]}.html" target="_blank" rel="noopener">Abrir no navegador</a><br><small>Detalhe técnico: ${esc(S.err.slice(-3).join(' | ')||'sem resposta')}</small></div>`;
+  else if(g)h+=box(p.clean,`<div class="chips">${TR.map(t=>`<button class="chip${S.trad===t?' on':''}" data-trad="${esc(t)}" title="${esc(t)}">${esc(t.split(' / ')[0])}</button>`).join('')}</div><div class="chips">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l=>`<button class="chip${S.letter===l?' on':''}" data-letter="${l}">${l}</button>`).join('')}</div><div class="meta" id="gcount"></div>`);
+  else h+=box(p.clean);
  }
  if(S.tab==='fav'){
   const L=S.fav.map(id=>S.favData[id]).filter(Boolean);
@@ -245,7 +295,7 @@ function render(){
   <div class="row"><span>Posts lidos</span><button class="chip" data-clearread>${S.read.length} · limpar</button></div>
   <p class="meta" style="margin-top:18px;line-height:1.5">Conteúdo e imagens: Portal dos Mitos. Este app lê o feed público do blog.</p></div>`;
  }
- $('#main').innerHTML=h;
+ $('#main').innerHTML=h;if(S.tab==='glos'||S.tab==='mapa')filt();
 }
 function setTab(k){
  if(S.tab===k&&k!=='home'){scrollTo(0,0);return}
@@ -302,15 +352,41 @@ async function random(){
   const g=await feed('max-results=1&start-index='+(1+Math.floor(Math.random()*t)));showReader(map(g.entry[0]))}
  catch(e){const p=S.posts[Math.floor(Math.random()*S.posts.length)];if(p)showReader(p)}
 }
-function filt(v){
- const root=$('#pg');if(!root)return;v=v.trim().toLowerCase();
- let els=[...root.querySelectorAll('li,tr,dt,p')];if(els.length<5)els=[...root.querySelectorAll('a')];
- els.forEach(el=>{el.hidden=!!v&&!el.textContent.toLowerCase().includes(v)});
+function parts(el){
+ if(!/^H[1-6]$/.test(el.tagName))return[el];
+ const a=[el];let n=el.nextElementSibling;
+ while(n&&!/^H[1-6]$/.test(n.tagName)&&!(n.id||'').startsWith('verbete-')){a.push(n);n=n.nextElementSibling}
+ return a;
 }
-document.addEventListener('input',e=>{if(e.target.id==='flt')filt(e.target.value)});
+function filt(){
+ const root=$('#pg');if(!root)return;
+ const v=nz(S.fq||'').trim();
+ const ents=[...root.querySelectorAll('[id^="verbete-"]')];
+ if(ents.length){
+  const kws=S.trad?S.trad.split(' / ').map(nz):[];let n=0;
+  ents.forEach(el=>{
+   const ps=parts(el),txt=ps.map(x=>x.textContent).join(' ');
+   const tEl=/^H[1-6]$/.test(el.tagName)?el:el.querySelector('h1,h2,h3,h4,h5,h6');
+   const title=(tEl?tEl.textContent:txt).trim();
+   const letter=nz(title).replace(/[^a-z]/g,'').charAt(0).toUpperCase();
+   const meta=nz(txt.replace(title,'')).slice(0,90);
+   const ok=(!v||nz(txt).includes(v))&&(!S.letter||letter===S.letter)&&(!kws.length||kws.some(k=>meta.includes(k)));
+   ps.forEach(x=>x.hidden=!ok);if(ok)n++;
+  });
+  const c=$('#gcount');if(c)c.textContent=n+' de '+ents.length+' verbetes';
+ }else{
+  let els=[...root.querySelectorAll('li,tr,dt,p')];if(els.length<5)els=[...root.querySelectorAll('a')];
+  els.forEach(el=>{el.hidden=!!v&&!nz(el.textContent).includes(v)});
+  root.querySelectorAll('details').forEach(d=>{const any=[...d.querySelectorAll('li')].some(l=>!l.hidden);d.hidden=!!v&&!any;if(v)d.open=any});
+ }
+}
+document.addEventListener('input',e=>{if(e.target.id==='flt'){S.fq=e.target.value;filt()}});
 document.addEventListener('click',async e=>{
  const a=e.target.closest('a');
  if(a&&a.closest('.body')){
+  const hr=a.getAttribute('href')||'';
+  if(hr.startsWith('#')){e.preventDefault();S.fq='';S.letter='';S.trad='';const f=$('#flt');if(f)f.value='';document.querySelectorAll('[data-trad],[data-letter]').forEach(b=>b.classList.remove('on'));filt();
+   const t=document.getElementById(hr.slice(1));if(t){t.scrollIntoView({block:'start'});t.classList.add('flash');setTimeout(()=>t.classList.remove('flash'),1600)}return}
   let u;try{u=new URL(a.href,BLOG)}catch(_){}
   if(u&&/(^|\.)portal-dos-mitos\.blogspot\.com(\.br)?$/.test(u.hostname)){e.preventDefault();route(u);return}
   return;
@@ -319,6 +395,11 @@ document.addEventListener('click',async e=>{
  if('close' in d&&d.label===undefined){closeReader();return}
  if(d.open){openPost(d.open);return}
  if(d.tab){setTab(d.tab);return}
+ if(d.trad!==undefined||d.letter!==undefined){
+  if(d.trad!==undefined)S.trad=S.trad===d.trad?'':d.trad;else S.letter=S.letter===d.letter?'':d.letter;
+  document.querySelectorAll('[data-trad]').forEach(b=>b.classList.toggle('on',b.dataset.trad===S.trad));
+  document.querySelectorAll('[data-letter]').forEach(b=>b.classList.toggle('on',b.dataset.letter===S.letter));
+  filt();return}
  if(d.label!==undefined){if('close' in d)closeReader();S.label=d.label;S.q='';S.tab='home';await load(true);scrollTo(0,0);return}
  if('clearq' in d){S.q='';$('#q').value='';load(true);return}
  if('more' in d){load();return}
