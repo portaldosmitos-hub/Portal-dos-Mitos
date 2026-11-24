@@ -13,7 +13,7 @@
 :root{--bg:#2a0c10;--surf:#3a1219;--hdr:#1f080b;--ink:#f7ece8;--mute:#d1a9a3;--line:#5c242b;--brand:#b01620;--acc:#ff8a80;--onb:#fff;--ui:system-ui,-apple-system,"Segoe UI",sans-serif;--hh:62px;--nh:60px}
 :root[data-theme=light]{--bg:#f7f2f1;--surf:#fff;--hdr:#fffaf9;--ink:#2b1517;--mute:#6d5557;--line:#e6d9d7;--acc:#b01620}
 :root[data-theme=bw]{--bg:#fff;--surf:#f1f1f1;--hdr:#fff;--ink:#000;--mute:#3a3a3a;--line:#b5b5b5;--brand:#000;--acc:#000;--onb:#fff}
-html[data-theme=bw]{filter:grayscale(1)}
+[data-theme=bw] #logo img{filter:grayscale(1)}
 [data-theme=bw] .ind::before{background:#000;box-shadow:none}
 [data-theme=bw] .ind::after{background:radial-gradient(65% 80% at 50% 0,rgba(0,0,0,.1),transparent 72%)}
 [data-theme=bw] nav .on .i{stroke:#000;filter:none}
@@ -154,7 +154,7 @@ const ico=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}<
 const NAV=[['home','home','Início'],['mapa','mapa','Mapa'],['glos','glos','Glossário'],['fav','fav','Favoritos'],['more','more','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 Object.assign(S,{zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
-const VER='1.8';
+const VER='1.9';
 Object.assign(S,{cols:store.get('cols',[]),favQ:'',favCol:'',favTag:'',favSort:store.get('favSort','r'),toastFn:null});
 S.fav.forEach(f=>{if(!Array.isArray(f.cols))f.cols=[]});
 const nz=t=>t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -320,7 +320,7 @@ function renderMore(){
  <h2>Páginas do blog</h2>${link('sobre','Sobre o Autor')}${link('blog','Sobre o Blog')}${link('parc','Parcerias')}${link('cont','Contato')}
  <h2>Ajustes do app</h2>
  <div class="row"><div>Avisar sobre novos mitos<small>${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></div>
- <div class="row" style="flex-wrap:wrap"><div>Cores do app<small>${S.theme==='bw'?'Preto e branco: fundo branco, textos pretos e imagens em cinza, no app e no blog.':'Vermelho, claro, escuro ou preto e branco.'}</small></div><div class="seg full">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro'],['bw','P&amp;B']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
+ <div class="row" style="flex-wrap:wrap"><div>Cores do app<small>${S.theme==='bw'?'Preto e branco: fundo branco e textos pretos no app e na área de leitura do blog.':'Vermelho, claro, escuro ou preto e branco.'}</small></div><div class="seg full">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro'],['bw','P&amp;B']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  ${standalone()?'':`<div class="row"><div>Instalar na tela inicial<small>${S.ins?'Pronto para instalar.':'Toque para ver como instalar.'}</small></div><button class="chip on" data-install>Instalar</button></div>`}
  <h2>Dados e manutenção</h2>
  <div class="row"><div>Backup dos favoritos<small>Guarde em arquivo ou traga de outro aparelho.</small></div><span style="display:flex;gap:8px"><button class="chip" data-export>Exportar</button><button class="chip" data-import>Importar</button></span></div>
