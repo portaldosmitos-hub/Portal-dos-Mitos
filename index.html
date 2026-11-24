@@ -154,7 +154,8 @@ const ico=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}<
 const NAV=[['home','home','Início'],['mapa','mapa','Mapa'],['glos','glos','Glossário'],['fav','fav','Favoritos'],['more','more','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 Object.assign(S,{zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
-const VER='1.9';
+const VER='2.1';
+const SNIP_REQ=4;
 Object.assign(S,{cols:store.get('cols',[]),favQ:'',favCol:'',favTag:'',favSort:store.get('favSort','r'),toastFn:null});
 S.fav.forEach(f=>{if(!Array.isArray(f.cols))f.cols=[]});
 const nz=t=>t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -224,7 +225,7 @@ addEventListener('message',e=>{
   if(o.f.contentWindow===e.source){
    o.cur={path,title:String(d.title||'Portal dos Mitos').slice(0,200),img:typeof d.img==='string'&&d.img.startsWith('https:')?d.img:''};
    o.box.classList.add('ok');
-   S.linked=true;pushHist(o.cur);
+   S.linked=true;S.snipV=+d.v||1;pushHist(o.cur);
   }
  }
  syncUI();
@@ -320,12 +321,12 @@ function renderMore(){
  <h2>Páginas do blog</h2>${link('sobre','Sobre o Autor')}${link('blog','Sobre o Blog')}${link('parc','Parcerias')}${link('cont','Contato')}
  <h2>Ajustes do app</h2>
  <div class="row"><div>Avisar sobre novos mitos<small>${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></div>
- <div class="row" style="flex-wrap:wrap"><div>Cores do app<small>${S.theme==='bw'?'Preto e branco: fundo branco e textos pretos no app e na área de leitura do blog.':'Vermelho, claro, escuro ou preto e branco.'}</small></div><div class="seg full">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro'],['bw','P&amp;B']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
+ <div class="row" style="flex-wrap:wrap"><div>Cores do app<small>${S.theme==='bw'?'Preto e branco: fundo branco e textos pretos no app e nas páginas de leitura do blog (posts e páginas).':'Vermelho, claro, escuro ou preto e branco.'}</small></div><div class="seg full">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro'],['bw','P&amp;B']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  ${standalone()?'':`<div class="row"><div>Instalar na tela inicial<small>${S.ins?'Pronto para instalar.':'Toque para ver como instalar.'}</small></div><button class="chip on" data-install>Instalar</button></div>`}
  <h2>Dados e manutenção</h2>
  <div class="row"><div>Backup dos favoritos<small>Guarde em arquivo ou traga de outro aparelho.</small></div><span style="display:flex;gap:8px"><button class="chip" data-export>Exportar</button><button class="chip" data-import>Importar</button></span></div>
  ${S.hist.length?`<button class="row" data-clearhist><span>Limpar lidos recentemente</span><span>✕</span></button>`:''}
- <div class="row"><div>Integração com o blog<small>Necessária para Favoritos, Lidos recentemente e Compartilhar.</small></div><span>${S.linked?'Ativa ✓':'Não detectada'}</span></div>
+ <div class="row"><div>Integração com o blog<small>${S.linked&&(S.snipV||1)<SNIP_REQ?'Código desatualizado no tema do blog: cole a versão nova.':'Necessária para Favoritos, Lidos recentemente, Compartilhar e P&amp;B.'}</small></div><span>${!S.linked?'Não detectada':((S.snipV||1)<SNIP_REQ?'Desatualizada':'Ativa ✓ v'+S.snipV)}</span></div>
  ${act('update','refresh','Atualizar o app','')}
  ${act('ext','ext','Abrir o blog no navegador','')}
  <p style="color:var(--mute);font-size:12px;line-height:1.5;margin-top:18px">Este app mostra o Portal dos Mitos diretamente do blog, com todos os recursos do site. Conteúdo e imagens: Portal dos Mitos. Versão ${VER}.</p>`;
