@@ -167,7 +167,7 @@ const ICONS={
 const ico=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
 const NAV=[['home','home','Início'],['mapa','mapa','Mapa'],['glos','glos','Glossário'],['fav','fav','Favoritos'],['more','more','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
-Object.assign(S,{zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
+Object.assign(S,{fx:store.get('fx',true),zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
 const VER='2.3';
 const SNIP_REQ=4;
 Object.assign(S,{cols:store.get('cols',[]),favQ:'',favCol:'',favTag:'',favSort:store.get('favSort','r'),toastFn:null});
@@ -190,7 +190,7 @@ function ensure(key,path){
  f.title=TITLES[key]||'Portal dos Mitos';
  f.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads');
  f.allow='clipboard-write; fullscreen';
- f.onload=()=>{const was=box.classList.contains('ok');box.classList.add('ok');if(busy)return;if(!covered&&was&&box.classList.contains('on')&&!RM.matches)snapCover();uncover()};
+ f.onload=()=>{box.classList.add('ok');if(busy)return;uncover()};
  f.src=src(path||SEC[key]);
  box.appendChild(f);$('#views').appendChild(box);
  const o=frames[key]={box,f,cur:null};layout(o);return o;
@@ -202,10 +202,9 @@ let busy=0,covered=false,chain=Promise.resolve(),failT;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const slide=(a,b,d)=>W.animate([{transform:'translateX('+a+')'},{transform:'translateX('+b+')'}],{duration:d,easing:'cubic-bezier(.7,0,.25,1)',fill:'forwards'}).finished.catch(()=>{});
 function cover(){chain=chain.then(async()=>{if(covered)return;covered=true;W.classList.add('on');await slide('100%','0%',300);clearTimeout(failT);failT=setTimeout(uncover,5000)});return chain}
-function snapCover(){chain=chain.then(async()=>{if(covered)return;covered=true;W.classList.add('on');await slide('0%','0%',1)})}
 function uncover(){chain=chain.then(async()=>{if(!covered)return;clearTimeout(failT);await sleep(120);await slide('0%','-100%',340);W.classList.remove('on');covered=false});return chain}
 function wipeGo(fn,wait){
- if(RM.matches||covered){fn();return}
+ if(RM.matches||!S.fx||covered){fn();return}
  busy++;cover().then(async()=>{fn();if(wait)await Promise.race([wait(),sleep(4000)]);await uncover();busy--});
 }
 function show(key,path){
@@ -248,7 +247,7 @@ function resetSection(){
 /* a página do blog informa qual página está aberta (código colado no tema) */
 addEventListener('message',e=>{
  const d=e.data;
- if(d&&d.type==='pdm:leave'){if(!RM.matches&&Object.values(frames).some(o=>o.f.contentWindow===e.source))cover();return}
+ if(d&&d.type==='pdm:leave'){if(!RM.matches&&S.fx&&Object.values(frames).some(o=>o.f.contentWindow===e.source))cover();return}
  if(!d||d.type!=='pdm:page')return;
  if(!busy)uncover();
  let u;try{u=new URL(d.url)}catch(_){return}
@@ -354,6 +353,7 @@ function renderMore(){
  <h2>Páginas do blog</h2>${link('sobre','Sobre o Autor')}${link('blog','Sobre o Blog')}${link('parc','Parcerias')}${link('cont','Contato')}
  <h2>Ajustes do app</h2>
  <div class="row"><div>Avisar sobre novos mitos<small>${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></div>
+ <div class="row"><div>Efeito de transição<small>Cortina com o logo ao trocar de página.</small></div><button class="chip ${S.fx?'on':''}" data-fx>${S.fx?'Ativado ✓':'Ativar'}</button></div>
  <div class="row" style="flex-wrap:wrap"><div>Cores do app<small>${S.theme==='bw'?'Preto e branco: fundo branco e textos pretos no app e nas páginas de leitura do blog (posts e páginas).':'Vermelho, claro, escuro ou preto e branco.'}</small></div><div class="seg full">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro'],['bw','P&amp;B']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  ${standalone()?'':`<div class="row"><div>Instalar na tela inicial<small>${S.ins?'Pronto para instalar.':'Toque para ver como instalar.'}</small></div><button class="chip on" data-install>Instalar</button></div>`}
  <h2>Dados e manutenção</h2>
@@ -509,6 +509,7 @@ document.addEventListener('click',e=>{
  if(t.id==='bS'){const s=$('#sbar');s.classList.toggle('on');if(s.classList.contains('on'))$('#q').focus();return}
  if(t.id==='banner'){t.classList.remove('on');if(S.latest){S.newest=S.latest.id;goPost(S.latest.path)}return}
  if(d.theme){S.theme=d.theme;store.set('theme',S.theme);applyTheme();renderMore();return}
+ if('fx' in d){S.fx=!S.fx;store.set('fx',S.fx);renderMore();return}
  if('notif' in d){toggleNotif();return}
  if('install' in d){
   if(S.ins){const p=S.ins;S.ins=null;p.prompt();p.userChoice.then(r=>{if(r.outcome==='accepted')toast('Instalando…');renderMore()})}
