@@ -27,13 +27,13 @@
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--ui)}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-header{position:fixed;top:0;left:0;right:0;z-index:5;height:calc(var(--hh) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0;background:var(--hdr);border-bottom:3px solid var(--brand);display:flex;align-items:center;gap:6px}
-#logo{flex:1;height:100%;display:flex;align-items:center;justify-content:flex-start;padding:4px 0}
-#logo img{height:52px;width:auto;display:block}
+header{position:fixed;top:0;left:0;right:0;z-index:5;height:calc(var(--hh) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0;background:var(--hdr);border-bottom:3px solid var(--brand);display:flex;align-items:center;gap:2px}
+#logo{flex:1;min-width:0;height:100%;display:flex;align-items:center;justify-content:flex-start;padding:4px 0}
+#logo img{height:52px;max-width:100%;object-fit:contain;object-position:left center;width:auto;display:block}
 .ic{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:20px;color:var(--ink)}
 .ic.on{color:#ffc94d}
 [hidden]{display:none!important}
-header .ic{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:56px;height:54px;border-radius:12px;font-size:10.5px;color:var(--ink);-webkit-tap-highlight-color:transparent}
+header .ic{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:46px;height:54px;padding:0;border-radius:12px;font-size:10px;flex:none;color:var(--ink);-webkit-tap-highlight-color:transparent}
 header .ic .i{width:23px;height:23px}
 header .ic span{line-height:1;color:var(--mute);transition:color .3s}
 header .ic.on span{color:#ffc94d}
@@ -121,6 +121,8 @@ nav .on .i .f{fill:url(#gold)}
   <button class="ic" id="bR" aria-label="Mito aleatório"></button>
   <button class="ic" id="bS" aria-label="Buscar"></button>
   <button class="ic" id="bF" aria-label="Favoritar esta página"></button>
+  <button class="ic" id="bSh" aria-label="Compartilhar esta página"></button>
+  <button class="ic" id="bLk" aria-label="Copiar link desta página"></button>
 </header>
 <div id="sbar"><input id="q" type="search" placeholder="Buscar no Portal dos Mitos" enterkeyhint="search"></div>
 <div id="off">Sem conexão. O conteúdo do blog precisa de internet.</div>
@@ -160,7 +162,7 @@ const ico=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}<
 const NAV=[['home','home','Início'],['mapa','mapa','Mapa'],['glos','glos','Glossário'],['fav','fav','Favoritos'],['more','more','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 Object.assign(S,{zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
-const VER='2.2';
+const VER='2.3';
 const SNIP_REQ=4;
 Object.assign(S,{cols:store.get('cols',[]),favQ:'',favCol:'',favTag:'',favSort:store.get('favSort','r'),toastFn:null});
 S.fav.forEach(f=>{if(!Array.isArray(f.cols))f.cols=[]});
@@ -195,7 +197,7 @@ function show(key,path){
 const curNav=()=>S.panel||(['home','mapa','glos'].includes(S.sec)?S.sec:'more');
 function buildNav(){
  $('#nav').innerHTML='<i class="ind nt" id="ind"></i>'+NAV.map(([k,i,l])=>`<button data-nav="${k}"><b>${ico(i)}</b><span>${l}</span></button>`).join('');
- $('#bR').innerHTML=ico('dice')+'<span>Aleatório</span>';$('#bS').innerHTML=ico('search')+'<span>Buscar</span>';$('#bF').innerHTML=ico('star')+'<span>Favoritar</span>';
+ $('#bR').innerHTML=ico('dice')+'<span>Aleatório</span>';$('#bS').innerHTML=ico('search')+'<span>Buscar</span>';$('#bF').innerHTML=ico('star')+'<span>Favoritar</span>';$('#bSh').innerHTML=ico('share')+'<span>Enviar</span>';$('#bLk').innerHTML=ico('link')+'<span>Link</span>';
  syncUI();
  requestAnimationFrame(()=>requestAnimationFrame(()=>{moveInd();$('#ind').classList.remove('nt')}));
 }
@@ -211,7 +213,7 @@ function syncUI(){
  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.nav===cur));
  moveInd();
  const c=(frames[S.sec]||{}).cur;
- const b=$('#bF');b.hidden=!!S.panel;const on=!!(c&&S.fav.some(f=>f.path===c.path));b.classList.toggle('on',on);const bl=b.querySelector('span');if(bl)bl.textContent=on?'Salvo':'Favoritar';
+ $('#bSh').hidden=$('#bLk').hidden=!!S.panel;const b=$('#bF');b.hidden=!!S.panel;const on=!!(c&&S.fav.some(f=>f.path===c.path));b.classList.toggle('on',on);const bl=b.querySelector('span');if(bl)bl.textContent=on?'Salvo':'Favoritar';
 }
 function goPost(path){
  const o=ensure('home');o.box.classList.remove('ok');o.cur=null;o.f.src=src(path);show('home');
@@ -321,8 +323,7 @@ function renderMore(){
  const act=(a,i,l,r='›')=>`<button class="row" data-${a}><span class="l">${ico(i)}<span>${l}</span></span><span>${r}</span></button>`;
  $('#more').innerHTML=`<div id="dayCard">${dayHtml()}</div>
   ${S.hist.length?`<h2>Lidos recentemente</h2>${S.hist.slice(0,6).map((h,i)=>`<button class="row" data-hist="${i}"><span>${esc(h.title)}</span><span>›</span></button>`).join('')}`:''}
- <h2>Esta página</h2>
- ${act('share','share','Compartilhar','')}${act('copy','link','Copiar link','')}
+ <h2>Leitura</h2>
  <div class="row"><span>Tamanho do texto</span><div class="seg"><button data-zoom="-1" aria-label="Diminuir">A−</button><span style="padding:8px 6px;font-size:13px;color:var(--mute)">${Math.round(S.zoom*100)}%</span><button data-zoom="1" aria-label="Aumentar">A+</button></div></div>
  <h2>Páginas do blog</h2>${link('sobre','Sobre o Autor')}${link('blog','Sobre o Blog')}${link('parc','Parcerias')}${link('cont','Contato')}
  <h2>Ajustes do app</h2>
@@ -477,6 +478,8 @@ document.addEventListener('click',e=>{
  if(d.favrm){const i=S.fav.findIndex(x=>x.path===d.favrm);if(i>=0){const [x]=S.fav.splice(i,1);saveFav();closeSheet();syncUI();toast('Removido dos favoritos','Desfazer',()=>{S.fav.splice(Math.min(i,S.fav.length),0,x);saveFav();syncUI();if(S.panel==='fav')renderFavs()})}return}
   if(t.id==='bF'){toggleFav();return}
  if(t.id==='bR'){randomMyth();return}
+ if(t.id==='bSh'){sharePage();return}
+ if(t.id==='bLk'){copyLink();return}
  if(t.id==='bS'){const s=$('#sbar');s.classList.toggle('on');if(s.classList.contains('on'))$('#q').focus();return}
  if(t.id==='banner'){t.classList.remove('on');if(S.latest){S.newest=S.latest.id;goPost(S.latest.path)}return}
  if(d.theme){S.theme=d.theme;store.set('theme',S.theme);applyTheme();renderMore();return}
