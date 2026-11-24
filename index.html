@@ -190,7 +190,7 @@ function ensure(key,path){
  f.title=TITLES[key]||'Portal dos Mitos';
  f.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads');
  f.allow='clipboard-write; fullscreen';
- f.onload=()=>{box.classList.add('ok');if(!busy)uncover()};
+ f.onload=()=>{const was=box.classList.contains('ok');box.classList.add('ok');if(busy)return;if(!covered&&was&&box.classList.contains('on')&&!RM.matches)snapCover();uncover()};
  f.src=src(path||SEC[key]);
  box.appendChild(f);$('#views').appendChild(box);
  const o=frames[key]={box,f,cur:null};layout(o);return o;
@@ -202,6 +202,7 @@ let busy=0,covered=false,chain=Promise.resolve(),failT;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const slide=(a,b,d)=>W.animate([{transform:'translateX('+a+')'},{transform:'translateX('+b+')'}],{duration:d,easing:'cubic-bezier(.7,0,.25,1)',fill:'forwards'}).finished.catch(()=>{});
 function cover(){chain=chain.then(async()=>{if(covered)return;covered=true;W.classList.add('on');await slide('100%','0%',300);clearTimeout(failT);failT=setTimeout(uncover,5000)});return chain}
+function snapCover(){chain=chain.then(async()=>{if(covered)return;covered=true;W.classList.add('on');await slide('0%','0%',1)})}
 function uncover(){chain=chain.then(async()=>{if(!covered)return;clearTimeout(failT);await sleep(120);await slide('0%','-100%',340);W.classList.remove('on');covered=false});return chain}
 function wipeGo(fn,wait){
  if(RM.matches||covered){fn();return}
