@@ -168,7 +168,7 @@ const ico=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}<
 const NAV=[['home','home','Início'],['mapa','mapa','Mapa'],['glos','glos','Glossário'],['fav','fav','Favoritos'],['more','more','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 Object.assign(S,{fx:store.get('fx',true),zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
-const VER='2.3';
+const VER='2.4';
 const SNIP_REQ=4;
 Object.assign(S,{cols:store.get('cols',[]),favQ:'',favCol:'',favTag:'',favSort:store.get('favSort','r'),toastFn:null});
 S.fav.forEach(f=>{if(!Array.isArray(f.cols))f.cols=[]});
@@ -352,7 +352,7 @@ function renderMore(){
  <div class="row"><span>Tamanho do texto</span><div class="seg"><button data-zoom="-1" aria-label="Diminuir">A−</button><span style="padding:8px 6px;font-size:13px;color:var(--mute)">${Math.round(S.zoom*100)}%</span><button data-zoom="1" aria-label="Aumentar">A+</button></div></div>
  <h2>Páginas do blog</h2>${link('sobre','Sobre o Autor')}${link('blog','Sobre o Blog')}${link('parc','Parcerias')}${link('cont','Contato')}
  <h2>Ajustes do app</h2>
- <div class="row"><div>Avisar sobre novos mitos<small>${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></div>
+ <div class="row"><div>Avisar sobre novos mitos<small id="nDiag">${np==='denied'?'Bloqueado nas configurações do navegador.':'Enquanto o app estiver aberto ou instalado.'}</small></div><span style="display:flex;gap:8px;flex:none">${S.notif?'<button class="chip" data-ntest>Testar</button>':''}<button class="chip ${S.notif?'on':''}" data-notif>${S.notif?'Ativado ✓':'Ativar'}</button></span></div>
  <div class="row"><div>Efeito de transição<small>Cortina com o logo ao trocar de página.</small></div><button class="chip ${S.fx?'on':''}" data-fx>${S.fx?'Ativado ✓':'Ativar'}</button></div>
  <div class="row" style="flex-wrap:wrap"><div>Cores do app<small>${S.theme==='bw'?'Preto e branco: fundo branco e textos pretos no app e nas páginas de leitura do blog (posts e páginas).':'Vermelho, claro, escuro ou preto e branco.'}</small></div><div class="seg full">${[['blog','Vermelho'],['light','Claro'],['dark','Escuro'],['bw','P&amp;B']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  ${standalone()?'':`<div class="row"><div>Instalar na tela inicial<small>${S.ins?'Pronto para instalar.':'Toque para ver como instalar.'}</small></div><button class="chip on" data-install>Instalar</button></div>`}
@@ -363,7 +363,7 @@ function renderMore(){
  ${act('update','refresh','Atualizar o app','')}
  ${act('ext','ext','Abrir o blog no navegador','')}
  <p style="color:var(--mute);font-size:12px;line-height:1.5;margin-top:18px">Este app mostra o Portal dos Mitos diretamente do blog, com todos os recursos do site. Conteúdo e imagens: Portal dos Mitos. Versão ${VER}.</p>`;
- fillDay();
+ fillDay();diagNotif();
 }
 
 /* ---------- novos posts e notificações ---------- */
@@ -383,6 +383,24 @@ async function notify(n){
  const o={body:n.text,icon:'icon-192.png',badge:'icon-192.png',tag:'mito-'+n.id,data:{path:n.path}};
  try{const r=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();if(r)await r.showNotification('Novo mito: '+n.title,o);else new Notification('Novo mito: '+n.title,o)}catch(e){}
 }
+async function diagNotif(){
+ const el=$('#nDiag');if(!el)return;
+ const np='Notification' in window?Notification.permission:'unsupported';
+ let sw=false,ps='indisponível neste aparelho';
+ try{const r=await navigator.serviceWorker.getRegistration();sw=!!(r&&r.active);
+  if(r&&r.periodicSync){const t=await r.periodicSync.getTags();ps=t.includes('novos-mitos')?'registrada':'não registrada'}}catch(e){}
+ const perm=np==='granted'?'Permissão ok':np==='denied'?'Permissão BLOQUEADA no navegador':np==='unsupported'?'Notificações indisponíveis':'Permissão pendente';
+ el.textContent=perm+' · serviço '+(sw?'ativo':'inativo')+' · verificação com o app fechado: '+ps+'. Com o app fechado, o Android pode atrasar ou não entregar o aviso.';
+}
+async function testNotif(){
+ if(!('Notification' in window)||Notification.permission!=='granted'){toast('Permissão de notificação não concedida.');return}
+ await notify({id:'teste'+Date.now(),title:'Teste de aviso',text:'Se você está lendo isto, as notificações funcionam neste aparelho.',path:'/'});
+ toast('Aviso de teste enviado');
+}
+function regPeriodic(){
+ if(!S.notif||!('Notification' in window)||Notification.permission!=='granted'||!navigator.serviceWorker)return;
+ navigator.serviceWorker.ready.then(r=>r.periodicSync&&r.periodicSync.register('novos-mitos',{minInterval:12*3600*1000})).catch(()=>{});
+}
 async function toggleNotif(){
  if(S.notif){S.notif=false;store.set('notif',false);renderMore();return}
  if(!('Notification' in window)){toast('Este navegador não oferece notificações.');return}
@@ -394,7 +412,12 @@ async function toggleNotif(){
 async function poll(){
  if(document.hidden&&!S.notif)return;
  try{const n=await latest();
-  if(!S.newest){S.newest=n.id;if(S.notif)setSeen(n.id);return}
+  if(!S.newest){
+   S.newest=n.id;
+   if(S.notif){const prev=await seen();
+    if(prev&&prev!==n.id){S.latest=n;const b=$('#banner');b.textContent='Novo mito desde sua última visita: '+n.title+'. Toque para abrir.';b.classList.add('on')}
+    setSeen(n.id)}
+   return}
   if(n.id!==S.newest){S.latest=n;const b=$('#banner');b.textContent='Novo mito: '+n.title+'. Toque para abrir.';b.classList.add('on');
    if(S.notif&&Notification.permission==='granted'&&await seen()!==n.id){notify(n);setSeen(n.id)}}
  }catch(e){}
@@ -515,6 +538,7 @@ document.addEventListener('click',e=>{
   if(S.ins){const p=S.ins;S.ins=null;p.prompt();p.userChoice.then(r=>{if(r.outcome==='accepted')toast('Instalando…');renderMore()})}
   else installHelp();
   return}
+ if('ntest' in d){testNotif();return}
  if('rand' in d){randomMyth();return}
  if(d.goto){goPost(d.goto);return}
  if(d.hist!==undefined){const h=S.hist[+d.hist];if(h)goPost(h.path);return}
@@ -546,7 +570,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
  navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.go)goPost(e.data.go)});
 }
 
-buildNav();applyTheme();online();
+buildNav();applyTheme();online();regPeriodic();
 const go=new URLSearchParams(location.search).get('go');
 if(go){history.replaceState(null,'',location.pathname);goPost(go)}else show('home');
 poll();
