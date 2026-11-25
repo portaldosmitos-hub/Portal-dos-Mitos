@@ -168,7 +168,12 @@ const ico=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}<
 const NAV=[['home','home','Início'],['mapa','mapa','Mapa'],['glos','glos','Glossário'],['fav','fav','Favoritos'],['more','more','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 Object.assign(S,{fx:store.get('fx',true),zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
-const VER='2.4';
+const VER='2.5';
+/* Avisos instantâneos (servidor gratuito na Cloudflare). Preencha PUSH_URL com o endereço do Worker
+   depois de implantá-lo, por exemplo: 'https://portal-mitos-push.SEU-USUARIO.workers.dev' */
+const PUSH_URL='https://portal-dos-mitos.portaldosmitos.workers.dev';
+const VAPID_PUBLIC='BAQvnTwBca7DFYAjzR2lKV-LpD6VZzbS8DOOJ0_bShEbpmIVfOgM7iwmPQiVS8pnjDyJaiVzZzuLRTqiL6318W0';
+const u8=b=>{const s=(b+'='.repeat((4-b.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/'),r=atob(s);return Uint8Array.from(r,c=>c.charCodeAt(0))};
 const SNIP_REQ=4;
 Object.assign(S,{cols:store.get('cols',[]),favQ:'',favCol:'',favTag:'',favSort:store.get('favSort','r'),toastFn:null});
 S.fav.forEach(f=>{if(!Array.isArray(f.cols))f.cols=[]});
@@ -390,10 +395,45 @@ async function diagNotif(){
  try{const r=await navigator.serviceWorker.getRegistration();sw=!!(r&&r.active);
   if(r&&r.periodicSync){const t=await r.periodicSync.getTags();ps=t.includes('novos-mitos')?'registrada':'não registrada'}}catch(e){}
  const perm=np==='granted'?'Permissão ok':np==='denied'?'Permissão BLOQUEADA no navegador':np==='unsupported'?'Notificações indisponíveis':'Permissão pendente';
- el.textContent=perm+' · serviço '+(sw?'ativo':'inativo')+' · verificação com o app fechado: '+ps+'. Com o app fechado, o Android pode atrasar ou não entregar o aviso.';
+ let inst=!PUSH_URL?'servidor não configurado':'inativo';
+ if(PUSH_URL){try{inst=(await pushSub(false))?'ativo':'inativo'}catch(e){}}
+ el.textContent=perm+' · serviço '+(sw?'ativo':'inativo')+' · envio instantâneo: '+inst+(PUSH_URL?'':' · verificação com o app fechado: '+ps+'. Com o app fechado, o Android pode atrasar o aviso.')+(S.pushErr?' · erro: '+S.pushErr:'');
+}
+async function pushSub(create){
+ if(!PUSH_URL||!('PushManager' in window)||!navigator.serviceWorker)return null;
+ const reg=await navigator.serviceWorker.ready;
+ let sub=await reg.pushManager.getSubscription();
+ if(!sub&&create)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(VAPID_PUBLIC)});
+ return sub;
+}
+async function pushJoin(){
+ try{
+  const sub=await pushSub(true);if(!sub)return false;
+  const r=await fetch(PUSH_URL+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint})});
+  if(!r.ok)throw new Error('servidor respondeu '+r.status);
+  store.set('pushAt',Date.now());S.pushErr='';return true;
+ }catch(e){S.pushErr=String(e.message||e);return false}
+}
+async function pushLeave(){
+ try{const sub=await pushSub(false);if(!sub)return;
+  if(PUSH_URL)fetch(PUSH_URL+'/unsubscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint})}).catch(()=>{});
+  await sub.unsubscribe()}catch(e){}
+}
+async function pushSync(){
+ if(!S.notif||!PUSH_URL||!('Notification' in window)||Notification.permission!=='granted')return;
+ const sub=await pushSub(false).catch(()=>null);
+ if(!sub||Date.now()-store.get('pushAt',0)>864e5)pushJoin();
 }
 async function testNotif(){
  if(!('Notification' in window)||Notification.permission!=='granted'){toast('Permissão de notificação não concedida.');return}
+ if(PUSH_URL){
+  try{const sub=await pushSub(false);
+   if(sub){const r=await fetch(PUSH_URL+'/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint})});
+    if(r.status===429){toast('Aguarde 1 minuto para testar de novo.');return}
+    if(r.ok){toast('Teste enviado pelo servidor. O aviso chega em alguns segundos.');return}
+    toast('O servidor não conseguiu enviar o teste ('+r.status+').');return}}
+  catch(e){toast('Não foi possível falar com o servidor de avisos.');return}
+ }
  await notify({id:'teste'+Date.now(),title:'Teste de aviso',text:'Se você está lendo isto, as notificações funcionam neste aparelho.',path:'/'});
  toast('Aviso de teste enviado');
 }
@@ -402,12 +442,13 @@ function regPeriodic(){
  navigator.serviceWorker.ready.then(r=>r.periodicSync&&r.periodicSync.register('novos-mitos',{minInterval:12*3600*1000})).catch(()=>{});
 }
 async function toggleNotif(){
- if(S.notif){S.notif=false;store.set('notif',false);renderMore();return}
+ if(S.notif){S.notif=false;store.set('notif',false);pushLeave();renderMore();return}
  if(!('Notification' in window)){toast('Este navegador não oferece notificações.');return}
  if(await Notification.requestPermission()!=='granted'){toast('Permissão negada. Libere nas configurações do navegador.');return}
  S.notif=true;store.set('notif',true);if(S.newest)setSeen(S.newest);
  try{const r=await navigator.serviceWorker.ready;await r.periodicSync.register('novos-mitos',{minInterval:12*3600*1000})}catch(e){}
- toast('Avisos ativados');renderMore();
+ let inst=false;if(PUSH_URL)inst=await pushJoin();
+ toast(inst?'Avisos ativados (envio instantâneo)':PUSH_URL?'Avisos ativados, mas o servidor não respondeu: '+S.pushErr:'Avisos ativados');renderMore();
 }
 async function poll(){
  if(document.hidden&&!S.notif)return;
@@ -570,7 +611,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
  navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.go)goPost(e.data.go)});
 }
 
-buildNav();applyTheme();online();regPeriodic();
+buildNav();applyTheme();online();regPeriodic();pushSync();
 const go=new URLSearchParams(location.search).get('go');
 if(go){history.replaceState(null,'',location.pathname);goPost(go)}else show('home');
 poll();
