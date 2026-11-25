@@ -1,4 +1,4 @@
-const SHELL='pdm-shell-v18',BLOG='https://portal-dos-mitos.blogspot.com';
+const SHELL='pdm-shell-v19',BLOG='https://portal-dos-mitos.blogspot.com';
 /* Endereço do servidor de avisos (Worker da Cloudflare). Preencha depois de implantar, igual ao PUSH_URL do index.html. */
 const PUSH='https://portal-dos-mitos.portaldosmitos.workers.dev';
 self.addEventListener('install',e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(['./','./manifest.webmanifest','./logo-topo.png','./icon-192.png','./favicon.png'])).then(()=>self.skipWaiting()))});

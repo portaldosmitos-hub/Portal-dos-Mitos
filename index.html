@@ -168,7 +168,7 @@ const ico=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}<
 const NAV=[['home','home','Início'],['mapa','mapa','Mapa'],['glos','glos','Glossário'],['fav','fav','Favoritos'],['more','more','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 Object.assign(S,{fx:store.get('fx',true),zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
-const VER='2.5';
+const VER='2.6';
 /* Avisos instantâneos (servidor gratuito na Cloudflare). Preencha PUSH_URL com o endereço do Worker
    depois de implantá-lo, por exemplo: 'https://portal-mitos-push.SEU-USUARIO.workers.dev' */
 const PUSH_URL='https://portal-dos-mitos.portaldosmitos.workers.dev';
@@ -602,7 +602,7 @@ addEventListener('appinstalled',()=>{S.ins=null;toast('App instalado!');if(S.pan
 function installHelp(){
  const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua),and=/Android/.test(ua);
  const how=ios?'No Safari, toque em <b>Compartilhar</b> (o quadrado com uma seta) e depois em <b>Adicionar à Tela de Início</b>.'
-  :and?'No Chrome, toque no menu <b>⋮</b> (canto superior direito) e escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.'
+  :and?'No Chrome, toque no menu <b>⋮</b> (canto superior direito) e escolha <b>Instalar app</b>. Evite <b>Adicionar à tela inicial</b> ou <b>Criar atalho</b>: esses atalhos fazem o Chrome mostrar um aviso fixo (“Toque para copiar o URL desse app”) sempre que você abre o app.'
   :'No Chrome ou no Edge, clique no ícone de instalação na barra de endereços, ou abra o menu e escolha <b>Instalar</b>.';
  openSheet(`<strong class="sh-t">Instalar o app</strong><p>${how}</p><p>O botão de instalação automática depende do navegador, que decide quando liberá-lo. O caminho acima funciona a qualquer momento.</p><button class="chip on" style="margin-top:10px;width:100%;padding:12px" data-sheetclose>Entendi</button>`);
 }
