@@ -1,4 +1,4 @@
-const SHELL='pdm-shell-v19',BLOG='https://portal-dos-mitos.blogspot.com';
+const SHELL='pdm-shell-v22',BLOG='https://portal-dos-mitos.blogspot.com';
 /* Endereço do servidor de avisos (Worker da Cloudflare). Preencha depois de implantar, igual ao PUSH_URL do index.html. */
 const PUSH='https://portal-dos-mitos.portaldosmitos.workers.dev';
 self.addEventListener('install',e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(['./','./manifest.webmanifest','./logo-topo.png','./icon-192.png','./favicon.png'])).then(()=>self.skipWaiting()))});
@@ -18,7 +18,7 @@ async function check(){
   if(last&&last!==id){
     const txt=(en.content?en.content.$t:'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,120);
     const href=(en.link.find(l=>l.rel==='alternate')||{}).href||BLOG;
-    await self.registration.showNotification('Novo mito: '+en.title.$t,{body:txt,icon:'icon-192.png',badge:'icon-192.png',tag:'mito-'+id,data:{path:new URL(href).pathname}});
+    await self.registration.showNotification('Novo mito: '+en.title.$t,{body:txt,icon:'icon-192.png',badge:'badge-72.png',tag:'mito-'+id,data:{path:new URL(href).pathname}});
   }
   await meta.put('/lastseen',new Response(id));
 }
@@ -43,11 +43,11 @@ async function latestPost(){
 async function onPush(){
   const n=await latestPost();
   if(!n){
-    return self.registration.showNotification('Portal dos Mitos',{body:'Há novidades no blog.',icon:'icon-192.png',badge:'icon-192.png',tag:'mito-geral',data:{path:'/'}});
+    return self.registration.showNotification('Portal dos Mitos',{body:'Há novidades no blog.',icon:'icon-192.png',badge:'badge-72.png',tag:'mito-geral',data:{path:'/'}});
   }
   await self.registration.showNotification(n.test?'Teste de aviso':'Novo mito: '+n.title,{
     body:n.test?'O envio pelo servidor está funcionando. Último mito: '+n.title:n.text,
-    icon:'icon-192.png',badge:'icon-192.png',tag:n.test?'mito-teste':'mito-'+n.id,data:{path:n.test?'/':n.path}
+    icon:'icon-192.png',badge:'badge-72.png',tag:n.test?'mito-teste':'mito-'+n.id,data:{path:n.test?'/':n.path}
   });
   if(!n.test){const meta=await caches.open('pdm-meta');await meta.put('/lastseen',new Response(n.id))}
 }

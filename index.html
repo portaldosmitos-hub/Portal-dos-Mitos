@@ -10,9 +10,9 @@
 <title>Portal dos Mitos</title>
 <style>
 /* Vermelho do blog por padrão. Para ajustar o tom, altere --brand. */
-:root{--bg:#2a0c10;--surf:#3a1219;--hdr:#1f080b;--ink:#f7ece8;--mute:#d1a9a3;--line:#5c242b;--brand:#b01620;--acc:#ff8a80;--onb:#fff;--ui:system-ui,-apple-system,"Segoe UI",sans-serif;--hh:62px;--nh:60px}
-:root[data-theme=light]{--bg:#f7f2f1;--surf:#fff;--hdr:#fffaf9;--ink:#2b1517;--mute:#6d5557;--line:#e6d9d7;--acc:#b01620}
-:root[data-theme=bw]{--bg:#fff;--surf:#f1f1f1;--hdr:#fff;--ink:#000;--mute:#3a3a3a;--line:#b5b5b5;--brand:#000;--acc:#000;--onb:#fff}
+:root{--star:rgba(255,226,170,.85);--gold:#f6c667;--bg:#2a0c10;--surf:#3a1219;--hdr:#1f080b;--ink:#f7ece8;--mute:#d1a9a3;--line:#5c242b;--brand:#b01620;--acc:#ff8a80;--onb:#fff;--ui:system-ui,-apple-system,"Segoe UI",sans-serif;--hh:62px;--nh:60px}
+:root[data-theme=light]{--star:rgba(176,22,32,.4);--gold:#b8860b;--bg:#f7f2f1;--surf:#fff;--hdr:#fffaf9;--ink:#2b1517;--mute:#6d5557;--line:#e6d9d7;--acc:#b01620}
+:root[data-theme=bw]{--star:rgba(0,0,0,.4);--gold:#222;--bg:#fff;--surf:#f1f1f1;--hdr:#fff;--ink:#000;--mute:#3a3a3a;--line:#b5b5b5;--brand:#000;--acc:#000;--onb:#fff}
 [data-theme=bw] #logo img{filter:grayscale(1)}
 [data-theme=bw] .ind::before{background:#000;box-shadow:none}
 [data-theme=bw] .ind::after{background:radial-gradient(65% 80% at 50% 0,rgba(0,0,0,.1),transparent 72%)}
@@ -44,11 +44,22 @@ header .ic.on span{color:#ffc94d}
 #views{position:fixed;left:0;right:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));bottom:calc(var(--nh) + env(safe-area-inset-bottom,0px));background:#fff}
 .fr{position:absolute;inset:0;overflow:hidden;visibility:hidden;background:var(--bg)}
 .fr.on{visibility:visible}
-#wipe{position:fixed;z-index:4;left:0;right:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));bottom:calc(var(--nh) + env(safe-area-inset-bottom,0px));display:none;place-items:center;overflow:hidden;background:radial-gradient(80% 55% at 50% 50%,var(--surf),var(--hdr));border-left:3px solid var(--brand);box-shadow:-18px 0 30px -4px rgba(176,22,32,.65);will-change:transform}
+#wipe{position:fixed;z-index:4;left:0;right:0;top:calc(var(--hh) + env(safe-area-inset-top,0px));bottom:calc(var(--nh) + env(safe-area-inset-bottom,0px));display:none;place-items:center;overflow:hidden;background:radial-gradient(75% 55% at 50% 48%,var(--surf),var(--hdr));border-left:3px solid var(--gold);box-shadow:-5px 0 16px rgba(255,214,122,.55),-22px 0 38px -6px rgba(176,22,32,.6);will-change:transform}
 #wipe.on{display:grid}
-#wipe::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(255,255,255,.03) 46px 48px)}
-#wipe img{position:relative;width:min(64%,300px);height:auto;filter:drop-shadow(0 0 16px rgba(255,138,128,.5));animation:wlogo .7s cubic-bezier(.2,.8,.3,1) both}
-[data-theme=bw] #wipe img{filter:grayscale(1)}
+#wipe::before{content:'';position:absolute;inset:0;background:radial-gradient(1.6px 1.6px at 9% 14%,var(--star),transparent 70%),radial-gradient(1px 1px at 22% 31%,var(--star),transparent 70%),radial-gradient(1.4px 1.4px at 37% 9%,var(--star),transparent 70%),radial-gradient(1px 1px at 52% 22%,var(--star),transparent 70%),radial-gradient(1.8px 1.8px at 71% 12%,var(--star),transparent 70%),radial-gradient(1px 1px at 88% 27%,var(--star),transparent 70%),radial-gradient(1.3px 1.3px at 6% 58%,var(--star),transparent 70%),radial-gradient(1px 1px at 93% 52%,var(--star),transparent 70%),radial-gradient(1.5px 1.5px at 15% 83%,var(--star),transparent 70%),radial-gradient(1px 1px at 33% 92%,var(--star),transparent 70%),radial-gradient(1.7px 1.7px at 58% 88%,var(--star),transparent 70%),radial-gradient(1px 1px at 79% 79%,var(--star),transparent 70%),radial-gradient(1.4px 1.4px at 90% 91%,var(--star),transparent 70%),radial-gradient(1px 1px at 46% 6%,var(--star),transparent 70%);animation:twk 3.2s ease-in-out infinite alternate}
+@keyframes twk{from{opacity:.5}to{opacity:1}}
+.wcol{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px}
+.wbox{position:relative;width:min(86vw,360px);aspect-ratio:1;display:grid;place-items:center}
+.wbox .ring{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.wbox .r1{animation:wspin 48s linear infinite}
+.wbox .r2{animation:wspin 30s linear infinite reverse}
+@keyframes wspin{to{transform:rotate(360deg)}}
+.ring path{fill:none;stroke:var(--gold);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.ring circle{fill:none;stroke:var(--gold)}
+.ring .f{fill:var(--gold);stroke:none}
+.wbox .wm{position:relative;width:58%;height:auto;filter:drop-shadow(0 0 14px rgba(255,150,80,.6));animation:wlogo .75s cubic-bezier(.2,.8,.3,1) both}
+[data-theme=bw] #wipe{filter:grayscale(1)}
+@media(max-height:560px){.wbox{width:min(70vw,260px)}}
 @keyframes wlogo{0%{opacity:0;transform:scale(.7)}45%{opacity:1}100%{opacity:1;transform:scale(1)}}
 .fr iframe{border:0;display:block;width:100%;height:100%;background:#fff;position:relative}
 .ld{position:absolute;inset:0;display:grid;place-items:center;color:var(--mute);font-size:14px}
@@ -168,7 +179,7 @@ const ico=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}<
 const NAV=[['home','home','Início'],['mapa','mapa','Mapa'],['glos','glos','Glossário'],['fav','fav','Favoritos'],['more','more','Mais']];
 const S={sec:'home',panel:null,theme:store.get('theme','blog'),notif:store.get('notif',false),fav:store.get('favs',[]),newest:null,latest:null,ins:null};
 Object.assign(S,{fx:store.get('fx',true),zoom:store.get('zoom',1),hist:store.get('hist',[]),linked:false,day:store.get('day',null)});
-const VER='2.6';
+const VER='2.8';
 /* Avisos instantâneos (servidor gratuito na Cloudflare). Preencha PUSH_URL com o endereço do Worker
    depois de implantá-lo, por exemplo: 'https://portal-mitos-push.SEU-USUARIO.workers.dev' */
 const PUSH_URL='https://portal-dos-mitos.portaldosmitos.workers.dev';
@@ -201,7 +212,11 @@ function ensure(key,path){
  const o=frames[key]={box,f,cur:null};layout(o);return o;
 }
 /* ---------- transição: cortina com o logo ---------- */
-const W=document.createElement('div');W.id='wipe';W.setAttribute('aria-hidden','true');W.innerHTML='<img src="logo-topo.png" alt="">';document.body.appendChild(W);
+const W=document.createElement('div');W.id='wipe';W.setAttribute('aria-hidden','true');
+const RD=['M0 -7V7M0 -3L5 -7M0 1L5 -3','M-3 7V-7L3 -3V7','M0 -7V7M0 -4L5 0L0 4','M0 -7V7M0 -7L5 -3M0 -2L5 2','M0 -7V7M0 -7L5 -3L0 1L5 7','M4 -5L-2 0L4 5','M-4 -6L4 6M4 -6L-4 6','M0 -7V7M0 -7L5 -3.5L0 0','M-3 -7V7M3 -7V7M-3 -2L3 2','M0 -7V7M-3 -2L3 2','M0 -7V7','M-3 -2L0 -5V1M3 2L0 5V-1','M0 -7V7M0 -7L3 -4M0 7L-3 4','M-3 -7V7M-3 -7L3 -4L-3 0','M0 -7V7M0 -1L-4 -6M0 -1L4 -6','M3 -7L-3 -2L3 2L-3 7','M0 -7V7M0 -7L-4 -3M0 -7L4 -3','M-3 -7V7M-3 -7L3 -3.5L-3 0L3 3.5L-3 7','M-4 -7V7M4 -7V7M-4 -7L0 -2L4 -7','M-1 -7V7M-1 -7L4 -3','M0 -7L4 0L0 7L-4 0Z','M-4 -6L4 6V-6L-4 6Z','M0 -7L4 -3L-4 3L0 7','M-4 7L0 -7L4 7M-2.5 2H2.5'];
+const ringHtml='<svg class="ring r1" viewBox="-100 -100 200 200"><circle r="96" stroke-width=".9" opacity=".75"/><circle r="68" stroke-width=".9" opacity=".75"/>'+RD.map((d,i)=>`<g transform="rotate(${i*15}) translate(0 -82)"><path d="${d}"/></g>`).join('')+[0,90,180,270].map(a=>`<g transform="rotate(${a}) translate(0 -96)">${sp(0,0,6)}</g>`).join('')+'</svg><svg class="ring r2" viewBox="-100 -100 200 200"><circle r="60" stroke-width="1.3" stroke-dasharray="1 5.2" stroke-linecap="round"/></svg>';
+W.innerHTML='<div class="wcol"><div class="wbox">'+ringHtml+'<img class="wm" src="logo-topo.png" alt=""></div></div>';
+document.body.appendChild(W);
 const RM=matchMedia('(prefers-reduced-motion:reduce)');
 let busy=0,covered=false,chain=Promise.resolve(),failT;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -385,7 +400,7 @@ async function latest(){
 const seen=async()=>{try{const r=await (await caches.open('pdm-meta')).match('/lastseen');return r?await r.text():null}catch(e){return null}};
 const setSeen=async id=>{try{await (await caches.open('pdm-meta')).put('/lastseen',new Response(id))}catch(e){}};
 async function notify(n){
- const o={body:n.text,icon:'icon-192.png',badge:'icon-192.png',tag:'mito-'+n.id,data:{path:n.path}};
+ const o={body:n.text,icon:'icon-192.png',badge:'badge-72.png',tag:'mito-'+n.id,data:{path:n.path}};
  try{const r=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();if(r)await r.showNotification('Novo mito: '+n.title,o);else new Notification('Novo mito: '+n.title,o)}catch(e){}
 }
 async function diagNotif(){
